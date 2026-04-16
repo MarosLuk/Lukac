@@ -243,7 +243,7 @@
 <header class="page-header">
   <span class="ph-mark">◆ IDENT · 00-000 · V1</span>
   <span class="ph-name">NAZOV SPOLOCNOSTI</span>
-  <span class="ph-meta">BUILD v2026.04.16-r5 · STR. 1/1</span>
+  <span class="ph-meta">BUILD v2026.04.16-r6 · STR. 1/1</span>
 </header>
 
 <!-- ===================== BLUEPRINT ===================== -->
@@ -276,13 +276,13 @@
           <path class="arrow" d="M 400 260 L 470 260" />
           <path class="arrow" d="M 400 256 L 400 264" />
           <path class="arrow" d="M 470 256 L 470 264" />
-          <text class="dim" x="420" y="275">30</text>
+          <text class="dim" x="420" y="275">60</text>
 
-          <text class="tag" x="30" y="130">■ 30 × 30 × 2 mm · L = 3000</text>
+          <text class="tag" x="30" y="130">■ 60 × 60 × 3 mm · L = 3000</text>
           <text class="tag" x="30" y="350">RÁM · HORIZONTÁL / VERTIKÁL</text>
           <text class="tag" x="30" y="370">AISI 304 · BRÚSENÉ</text>
         </svg>
-        <div class="bp-canvas-label">RÚRA ŠTVORCOVÁ 30×30</div>
+        <div class="bp-canvas-label">RÚRA ŠTVORCOVÁ 60×60</div>
       </div>
 
       <!-- RÚRA KRUHOVÁ -->
@@ -333,7 +333,7 @@
           <circle class="ink thin d4" cx="370" cy="280" r="44" />
           <line class="ink thin d4" x1="370" y1="180" x2="370" y2="228" />
 
-          <text class="dim" x="130" y="45">⬜ 30</text>
+          <text class="dim" x="130" y="45">⬜ 60</text>
           <text class="dim" x="130" y="340">⌀ 60</text>
 
           <path class="arrow" d="M 70 60 L 70 380" />
@@ -363,7 +363,7 @@
   <span>© 2026 NAZOV SPOLOCNOSTI · s.r.o.</span>
   <span>IČO 00 000 000 · DIČ 20 000 000 00</span>
   <span>info@nazovspolocnosti.sk · +421 000 000 000</span>
-  <span style="opacity:.6">BUILD v2026.04.16-r5</span>
+  <span style="opacity:.6">BUILD v2026.04.16-r6</span>
 </footer>
 
 <!-- ===================== 3D VIEWER ===================== -->
@@ -542,9 +542,9 @@
       group.add(weld2);
 
       // --- SAMPLES of the other 2 element types displayed alongside ---
-      // BRUSHED square tube (left) — 3 length, 0.5 × 0.5 cross-section
+      // BRUSHED square tube (left) — 60×60 mm cross-section (1.2×1.2 at V1 scale)
       var sqSample = new THREE.Mesh(
-        new THREE.BoxGeometry(3, 0.5, 0.5),
+        new THREE.BoxGeometry(3, 1.2, 1.2),
         brushed.clone()
       );
       sqSample.position.set(-6, 0, 0);
@@ -556,32 +556,31 @@
       sqSample.add(sqEdges);
       group.add(sqSample);
 
-      // POLISHED round pipe (right) — 3 length, r=0.35
+      // POLISHED round pipe (right) — ⌀20 mm (r=0.2 at V1 scale)
       var rdSample = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.35, 0.35, 3, 28, 1),
+        new THREE.CylinderGeometry(0.2, 0.2, 3, 28, 1),
         polished.clone()
       );
       rdSample.rotation.z = Math.PI / 2; // lay horizontal along X
       rdSample.position.set(6, 0, 0);
       rdSample.castShadow = true; rdSample.receiveShadow = true;
-      // Inner dark void for hollow look
       var rdInner = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.27, 0.27, 3.02, 24, 1, true),
+        new THREE.CylinderGeometry(0.15, 0.15, 3.02, 24, 1, true),
         innerMat.clone()
       );
       rdSample.add(rdInner);
       group.add(rdSample);
 
-      // Small labels embedded in scene via thin line markers (decoration only)
+      // Small markers under each sample
       var markerMat = new THREE.LineBasicMaterial({ color: 0x9ec5ff, transparent: true, opacity: 0.4 });
       function tickMarker(x, y) {
         var pts = [new THREE.Vector3(x, y - 0.15, 0), new THREE.Vector3(x, y - 1.8, 0)];
         var geo = new THREE.BufferGeometry().setFromPoints(pts);
         group.add(new THREE.Line(geo, markerMat));
       }
-      tickMarker(-6, -0.25);
+      tickMarker(-6, -0.6);
       tickMarker(0, -2);
-      tickMarker(6, -0.35);
+      tickMarker(6, -0.2);
 
       var bbox = new THREE.Box3().setFromObject(group);
       var center = new THREE.Vector3();

@@ -268,7 +268,7 @@
 <header class="page-header">
   <span class="ph-mark">◆ IDENT · 00-002 · V2</span>
   <span class="ph-name">NAZOV SPOLOCNOSTI</span>
-  <span class="ph-meta">BUILD v2026.04.16-r5 · ASSEMBLY</span>
+  <span class="ph-meta">BUILD v2026.04.16-r6 · ASSEMBLY</span>
 </header>
 
 <!-- ===================== BLUEPRINT ===================== -->
@@ -358,13 +358,13 @@
           <path class="arrow" d="M 400 260 L 470 260" />
           <path class="arrow" d="M 400 256 L 400 264" />
           <path class="arrow" d="M 470 256 L 470 264" />
-          <text class="dim" x="420" y="275">30</text>
+          <text class="dim" x="420" y="275">60</text>
 
-          <text class="tag" x="30" y="130">■ 30 × 30 × 2 mm · L = 3000</text>
+          <text class="tag" x="30" y="130">■ 60 × 60 × 3 mm · L = 3000</text>
           <text class="tag" x="30" y="350">RÁM · TOP / BOT / VERT</text>
           <text class="tag" x="30" y="370">AISI 304 · LEŠTENÉ</text>
         </svg>
-        <div class="bp-canvas-label">RÚRA ŠTVORCOVÁ 30×30</div>
+        <div class="bp-canvas-label">RÚRA ŠTVORCOVÁ 60×60</div>
       </div>
 
       <!-- RÚRA KRUHOVÁ -->
@@ -426,7 +426,7 @@
           <line class="ink thin d4" x1="370" y1="180" x2="370" y2="228" />
 
           <!-- dims -->
-          <text class="dim" x="130" y="45">⬜ 30</text>
+          <text class="dim" x="130" y="45">⬜ 60</text>
           <text class="dim" x="130" y="340">⌀ 60</text>
 
           <path class="arrow" d="M 70 60 L 70 380" />
@@ -456,7 +456,7 @@
   <span>© 2026 NAZOV SPOLOCNOSTI · s.r.o.</span>
   <span>IČO 00 000 000 · DIČ 20 000 000 00</span>
   <span>info@nazovspolocnosti.sk · +421 000 000 000</span>
-  <span style="opacity:.6">BUILD v2026.04.16-r5</span>
+  <span style="opacity:.6">BUILD v2026.04.16-r6</span>
 </footer>
 
 <!-- ===================== 3D VIEWER ===================== -->
@@ -469,7 +469,7 @@
   </div>
 
   <div class="parts-legend">
-    <div class="item"><span>RÁM · RÚRA ŠTVORCOVÁ 30×30</span><span class="sw a"></span></div>
+    <div class="item"><span>RÁM · RÚRA ŠTVORCOVÁ 60×60</span><span class="sw a"></span></div>
     <div class="item"><span>VÝPLŇ · RÚRA KRUHOVÁ ⌀20</span><span class="sw b"></span></div>
     <div class="item"><span>ROH · PRECHODOVÝ KUS</span><span class="sw c"></span></div>
   </div>
@@ -513,8 +513,8 @@
   // ---------- GATE DIMENSIONS ----------
   var W = 6.4;          // gate width
   var H = 2.8;          // gate height
-  var TS = 0.28;        // square tube cross-section
-  var PR = 0.085;       // picket radius
+  var TS = 0.56;        // square tube cross-section (60×60 mm real)
+  var PR = 0.085;       // picket radius (⌀20 mm real)
   var N_PICKETS = 13;
 
   function initThree() {

@@ -320,7 +320,7 @@
 <header class="page-header">
   <span class="ph-mark">◆ IDENT · 00-003 · V3</span>
   <span class="ph-name">NAZOV SPOLOCNOSTI</span>
-  <span class="ph-meta">BUILD v2026.04.16-r5 · INTERACTIVE</span>
+  <span class="ph-meta">BUILD v2026.04.16-r6 · INTERACTIVE</span>
 </header>
 
 <!-- ===================== BLUEPRINT ===================== -->
@@ -397,13 +397,13 @@
           <path class="arrow" d="M 400 260 L 470 260" />
           <path class="arrow" d="M 400 256 L 400 264" />
           <path class="arrow" d="M 470 256 L 470 264" />
-          <text class="dim" x="420" y="275">30</text>
+          <text class="dim" x="420" y="275">60</text>
 
-          <text class="tag" x="30" y="130">■ 30 × 30 × 2 mm · L = 3000</text>
+          <text class="tag" x="30" y="130">■ 60 × 60 × 3 mm · L = 3000</text>
           <text class="tag" x="30" y="350">RÁM · TOP / BOT / VERT</text>
           <text class="tag" x="30" y="370">AISI 304 · LEŠTENÉ</text>
         </svg>
-        <div class="bp-canvas-label">RÚRA ŠTVORCOVÁ 30×30</div>
+        <div class="bp-canvas-label">RÚRA ŠTVORCOVÁ 60×60</div>
       </div>
 
       <!-- RÚRA KRUHOVÁ -->
@@ -454,7 +454,7 @@
           <circle class="ink thin d4" cx="370" cy="280" r="44" />
           <line class="ink thin d4" x1="370" y1="180" x2="370" y2="228" />
 
-          <text class="dim" x="130" y="45">⬜ 30</text>
+          <text class="dim" x="130" y="45">⬜ 60</text>
           <text class="dim" x="130" y="340">⌀ 60</text>
 
           <path class="arrow" d="M 70 60 L 70 380" />
@@ -484,7 +484,7 @@
   <span>© 2026 NAZOV SPOLOCNOSTI · s.r.o.</span>
   <span>IČO 00 000 000 · DIČ 20 000 000 00</span>
   <span>info@nazovspolocnosti.sk · +421 000 000 000</span>
-  <span style="opacity:.6">BUILD v2026.04.16-r5</span>
+  <span style="opacity:.6">BUILD v2026.04.16-r6</span>
 </footer>
 
 <!-- ===================== 3D VIEWER ===================== -->
@@ -497,7 +497,7 @@
   </div>
 
   <div class="parts-legend">
-    <div class="item"><span>RÁM · RÚRA ŠTVORCOVÁ 30×30</span><span class="sw a"></span></div>
+    <div class="item"><span>RÁM · RÚRA ŠTVORCOVÁ 60×60</span><span class="sw a"></span></div>
     <div class="item"><span>VÝPLŇ · RÚRA KRUHOVÁ ⌀20</span><span class="sw b"></span></div>
     <div class="item"><span>ROH · PRECHODOVÝ KUS</span><span class="sw c"></span></div>
   </div>
@@ -579,7 +579,7 @@
     camera.lookAt(orbit.target);
   }
 
-  var W = 6.4, H = 2.8, TS = 0.28, PR = 0.085, N_PICKETS = 13;
+  var W = 6.4, H = 2.8, TS = 0.56, PR = 0.085, N_PICKETS = 13;  // TS = 60×60 mm real
 
   function initThree() {
     if (typeof THREE === 'undefined') {
@@ -662,7 +662,7 @@
         start: new THREE.Vector3(0, 8, 2),
         startRot: new THREE.Euler(0.3, 0.5, 0),
         delay: 0.0, duration: 0.9, kind: 'frame',
-        id: 'F01', label: 'HORNÁ KOĽAJNICA', dims: '30 × 30 × 4200 mm', meta: 'RÁM · HORIZONTÁLNA',
+        id: 'F01', label: 'HORNÁ KOĽAJNICA', dims: '60 × 60 × 4200 mm', meta: 'RÁM · HORIZONTÁLNA',
       });
       addPart({
         mesh: sqTube(W, TS, TS, frameMat),
@@ -671,7 +671,7 @@
         start: new THREE.Vector3(0, -8, -2),
         startRot: new THREE.Euler(-0.3, -0.5, 0),
         delay: 0.2, duration: 0.9, kind: 'frame',
-        id: 'F02', label: 'SPODNÁ KOĽAJNICA', dims: '30 × 30 × 4200 mm', meta: 'RÁM · HORIZONTÁLNA',
+        id: 'F02', label: 'SPODNÁ KOĽAJNICA', dims: '60 × 60 × 4200 mm', meta: 'RÁM · HORIZONTÁLNA',
       });
       addPart({
         mesh: sqTube(TS, H - 2 * TS, TS, frameMat),
@@ -680,7 +680,7 @@
         start: new THREE.Vector3(-10, 1, 3),
         startRot: new THREE.Euler(0, 0.8, 0.2),
         delay: 0.6, duration: 1.0, kind: 'frame',
-        id: 'F03', label: 'BOČNICA ĽAVÁ', dims: '30 × 30 × 1740 mm', meta: 'RÁM · VERTIKÁLNA',
+        id: 'F03', label: 'BOČNICA ĽAVÁ', dims: '60 × 60 × 1740 mm', meta: 'RÁM · VERTIKÁLNA',
       });
       addPart({
         mesh: sqTube(TS, H - 2 * TS, TS, frameMat),
@@ -689,7 +689,7 @@
         start: new THREE.Vector3(10, -1, -3),
         startRot: new THREE.Euler(0, -0.8, -0.2),
         delay: 0.8, duration: 1.0, kind: 'frame',
-        id: 'F04', label: 'BOČNICA PRAVÁ', dims: '30 × 30 × 1740 mm', meta: 'RÁM · VERTIKÁLNA',
+        id: 'F04', label: 'BOČNICA PRAVÁ', dims: '60 × 60 × 1740 mm', meta: 'RÁM · VERTIKÁLNA',
       });
 
       var corners = [
