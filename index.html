@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0b1f3a" />
+<title>Blueprint → 3D · Nazov Spolocnosti</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; font-family: 'Courier New', monospace; }
+  body {
+    background: radial-gradient(ellipse at center, #174a8a 0%, #0b2752 60%, #061934 100%);
+    color: #e7f0ff;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    position: relative;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.07) 1px, transparent 1px),
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  header {
+    position: relative; z-index: 2;
+    background: #061934;
+    border-bottom: 1px solid rgba(158,197,255,0.35);
+    padding: 10px 22px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 2px;
+  }
+  header .mark { font-size: 10px; opacity: 0.7; }
+  header .name {
+    font-size: 14px; font-weight: bold; letter-spacing: 4px;
+    flex: 1; text-align: center;
+  }
+  header .meta { font-size: 10px; opacity: 0.8; }
+
+  main {
+    position: relative; z-index: 1;
+    flex: 1;
+    max-width: 1200px; width: 100%;
+    margin: 0 auto;
+    padding: 60px 28px 40px;
+  }
+
+  .intro {
+    border: 2px solid #9ec5ff;
+    padding: 26px 28px;
+    box-shadow: 0 0 30px rgba(158,197,255,0.12), inset 0 0 30px rgba(158,197,255,0.04);
+    margin-bottom: 40px;
+  }
+  .intro .tag {
+    font-size: 10px; letter-spacing: 3px; color: #9ec5ff; margin-bottom: 10px;
+  }
+  .intro h1 {
+    font-size: clamp(28px, 5vw, 44px);
+    font-weight: normal; letter-spacing: 2px;
+    line-height: 1.1;
+  }
+  .intro p {
+    margin-top: 14px;
+    font-size: 14px; line-height: 1.7;
+    color: #cfe1ff; max-width: 70ch;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .card {
+    position: relative;
+    background: rgba(6,25,52,0.5);
+    backdrop-filter: blur(6px);
+    border: 1px solid #9ec5ff;
+    padding: 24px;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.35s ease, background 0.35s ease, box-shadow 0.35s ease;
+    display: flex; flex-direction: column; gap: 12px;
+    min-height: 240px;
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    background: rgba(11,31,58,0.85);
+    box-shadow: 0 12px 40px rgba(158,197,255,0.2);
+  }
+  .card .num {
+    font-size: 44px; letter-spacing: 2px; color: #9ec5ff; line-height: 1;
+  }
+  .card h2 {
+    font-size: 16px; letter-spacing: 2px; font-weight: normal;
+  }
+  .card p {
+    font-size: 12px; line-height: 1.7; color: #cfe1ff; opacity: 0.85;
+    flex: 1;
+  }
+  .card .go {
+    margin-top: auto;
+    font-size: 11px; letter-spacing: 3px;
+    color: #9ec5ff;
+    padding-top: 12px;
+    border-top: 1px dashed rgba(158,197,255,0.35);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .card .branch {
+    font-size: 9px; letter-spacing: 2px; opacity: 0.6;
+    font-family: 'Courier New', monospace;
+  }
+
+  footer {
+    position: relative; z-index: 2;
+    background: #061934;
+    border-top: 1px solid rgba(158,197,255,0.35);
+    padding: 10px 22px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 10px; letter-spacing: 1.5px;
+    color: #9ec5ff;
+    flex-wrap: wrap; gap: 8px;
+  }
+
+  @media (max-width: 640px) {
+    header .mark, header .meta { display: none; }
+    header .name { font-size: 11px; letter-spacing: 2px; }
+    main { padding: 30px 16px; }
+    .intro { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <span class="mark">◆ IDENT · 00-000</span>
+  <span class="name">NAZOV SPOLOCNOSTI</span>
+  <span class="meta">BLUEPRINT · INDEX</span>
+</header>
+
+<main>
+  <section class="intro">
+    <div class="tag">◆ BLUEPRINT → 3D · DEMO INDEX</div>
+    <h1>Technické výkresy s 3D vizualizáciou.</h1>
+    <p>
+      Tri postupne rozširené verzie blueprintu s integrovaným Three.js 3D modelom.
+      Každá verzia pridáva novú funkcionalitu — od jednoduchej prezentácie dielu
+      po plne interaktívnu montáž brány s fokusom na jednotlivé komponenty.
+    </p>
+  </section>
+
+  <div class="grid">
+    <a class="card" href="v1/">
+      <div class="num">01</div>
+      <h2>PRECHODOVÝ KUS</h2>
+      <p>
+        3-pohľadový technický výkres (spredu / zhora / zboku) jedného dielu.
+        Kliknutím sa otvorí automaticky rotujúci 3D model.
+      </p>
+      <div class="go">
+        <span>ZOBRAZIŤ →</span>
+        <span class="branch">branch: version1</span>
+      </div>
+    </a>
+
+    <a class="card" href="v2/">
+      <div class="num">02</div>
+      <h2>MONTÁŽ BRÁNY</h2>
+      <p>
+        4-pohľadový výkres bránovej zostavy + troch typov dielov. 3D animácia
+        postupne skladá rám, prechodové kusy a pickety do hotovej posuvnej brány.
+      </p>
+      <div class="go">
+        <span>ZOBRAZIŤ →</span>
+        <span class="branch">branch: version2</span>
+      </div>
+    </a>
+
+    <a class="card" href="v3/">
+      <div class="num">03</div>
+      <h2>INTERAKTÍVNA BRÁNA</h2>
+      <p>
+        Plná orbit-kontrola (ťahaj / zoom / pinch), raycaster klik-na-diel so
+        zoomom na komponent, grid rozloženie v režime ROZLOŽIŤ. Informačná karta
+        o každom diele.
+      </p>
+      <div class="go">
+        <span>ZOBRAZIŤ →</span>
+        <span class="branch">branch: version3</span>
+      </div>
+    </a>
+  </div>
+</main>
+
+<footer>
+  <span>© 2026 NAZOV SPOLOCNOSTI · s.r.o.</span>
+  <span>REPO · github.com/MarosLuk/Lukac</span>
+  <span>BUILD · V.2026.04</span>
+</footer>
+</body>
+</html>
