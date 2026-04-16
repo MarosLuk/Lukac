@@ -243,7 +243,7 @@
 <header class="page-header">
   <span class="ph-mark">◆ IDENT · 00-000 · V1</span>
   <span class="ph-name">NAZOV SPOLOCNOSTI</span>
-  <span class="ph-meta">BUILD v2026.04.16-r6 · STR. 1/1</span>
+  <span class="ph-meta">BUILD v2026.04.16-r7 · STR. 1/1</span>
 </header>
 
 <!-- ===================== BLUEPRINT ===================== -->
@@ -363,7 +363,7 @@
   <span>© 2026 NAZOV SPOLOCNOSTI · s.r.o.</span>
   <span>IČO 00 000 000 · DIČ 20 000 000 00</span>
   <span>info@nazovspolocnosti.sk · +421 000 000 000</span>
-  <span style="opacity:.6">BUILD v2026.04.16-r6</span>
+  <span style="opacity:.6">BUILD v2026.04.16-r7</span>
 </footer>
 
 <!-- ===================== 3D VIEWER ===================== -->
@@ -477,13 +477,13 @@
 
       group = new THREE.Group();
 
-      // horná vertikálna rúra (POLISHED — round pipe)
+      // horná vertikálna rúra (POLISHED — short plug, half previous length)
       var topPipe = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.9, 0.9, 1.2, 48, 1, true),
+        new THREE.CylinderGeometry(0.9, 0.9, 0.6, 48, 1, true),
         polished.clone()
       );
       topPipe.material.side = THREE.DoubleSide;
-      topPipe.position.set(-1.2, 1.4, 0);
+      topPipe.position.set(-1.2, 1.1, 0);  // flush with topBox top (was 1.4)
       topPipe.castShadow = true;
       group.add(topPipe);
 
@@ -495,9 +495,9 @@
       group.add(topBox);
 
       var innerTop = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.82, 0.82, 1.42, 48, 1, true), innerMat
+        new THREE.CylinderGeometry(0.82, 0.82, 0.62, 48, 1, true), innerMat
       );
-      innerTop.position.set(-1.2, 1.4, 0);
+      innerTop.position.set(-1.2, 1.1, 0);
       group.add(innerTop);
 
       var horBox = new THREE.Mesh(
@@ -514,21 +514,22 @@
       linkBox.castShadow = true;
       group.add(linkBox);
 
+      // horizontálna rúra vpravo (POLISHED — short plug, half previous length)
       var rightPipe = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.8, 0.8, 1.2, 48, 1, true),
+        new THREE.CylinderGeometry(0.8, 0.8, 0.6, 48, 1, true),
         polished.clone()
       );
       rightPipe.material.side = THREE.DoubleSide;
       rightPipe.rotation.z = Math.PI / 2;
-      rightPipe.position.set(2.2, -1.1, 0);
+      rightPipe.position.set(1.9, -1.1, 0);   // flush with horBox right face (was 2.2)
       rightPipe.castShadow = true;
       group.add(rightPipe);
 
       var innerRight = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.72, 0.72, 1.22, 48, 1, true), innerMat
+        new THREE.CylinderGeometry(0.72, 0.72, 0.62, 48, 1, true), innerMat
       );
       innerRight.rotation.z = Math.PI / 2;
-      innerRight.position.set(2.2, -1.1, 0);
+      innerRight.position.set(1.9, -1.1, 0);
       group.add(innerRight);
 
       var weld1 = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.04, 8, 32), weldMat);
@@ -542,9 +543,9 @@
       group.add(weld2);
 
       // --- SAMPLES of the other 2 element types displayed alongside ---
-      // BRUSHED square tube (left) — 60×60 mm cross-section (1.2×1.2 at V1 scale)
+      // BRUSHED square tube (left) — visual sample (labels: 60×60 mm real)
       var sqSample = new THREE.Mesh(
-        new THREE.BoxGeometry(3, 1.2, 1.2),
+        new THREE.BoxGeometry(3, 0.5, 0.5),
         brushed.clone()
       );
       sqSample.position.set(-6, 0, 0);
@@ -556,16 +557,16 @@
       sqSample.add(sqEdges);
       group.add(sqSample);
 
-      // POLISHED round pipe (right) — ⌀20 mm (r=0.2 at V1 scale)
+      // POLISHED round pipe (right) — visual sample (labels: ⌀20 mm real)
       var rdSample = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.2, 0.2, 3, 28, 1),
+        new THREE.CylinderGeometry(0.35, 0.35, 3, 28, 1),
         polished.clone()
       );
-      rdSample.rotation.z = Math.PI / 2; // lay horizontal along X
+      rdSample.rotation.z = Math.PI / 2;
       rdSample.position.set(6, 0, 0);
       rdSample.castShadow = true; rdSample.receiveShadow = true;
       var rdInner = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.15, 0.15, 3.02, 24, 1, true),
+        new THREE.CylinderGeometry(0.27, 0.27, 3.02, 24, 1, true),
         innerMat.clone()
       );
       rdSample.add(rdInner);
@@ -578,9 +579,9 @@
         var geo = new THREE.BufferGeometry().setFromPoints(pts);
         group.add(new THREE.Line(geo, markerMat));
       }
-      tickMarker(-6, -0.6);
+      tickMarker(-6, -0.25);
       tickMarker(0, -2);
-      tickMarker(6, -0.2);
+      tickMarker(6, -0.35);
 
       var bbox = new THREE.Box3().setFromObject(group);
       var center = new THREE.Vector3();
