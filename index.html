@@ -128,10 +128,19 @@
   }
 
   @media (max-width: 1100px) {
-    .bp-body { grid-template-columns: repeat(2, 1fr); }
+    html, body { height: auto; }
+    body { overflow-y: auto; overflow-x: hidden; }
+    #blueprint { overflow: visible; flex: 0 0 auto; min-height: calc(100vh - 110px); padding-bottom: 20px; }
+    .bp-frame { height: auto; min-height: calc(100vh - 130px); }
+    .bp-body {
+      grid-template-columns: repeat(2, 1fr);
+      grid-auto-rows: minmax(300px, auto);
+    }
+    .bp-canvas { min-height: 300px; }
   }
   @media (max-width: 520px) {
-    .bp-body { grid-template-columns: 1fr; }
+    .bp-body { grid-template-columns: 1fr; grid-auto-rows: minmax(360px, auto); }
+    .bp-canvas { min-height: 360px; }
     .bp-header { font-size: 9px; }
     .bp-title { font-size: 11px; }
     .bp-frame { padding: 8px 10px; }
@@ -558,15 +567,31 @@
       floor.receiveShadow = true;
       scene.add(floor);
 
-      // Materials
+      // ---- Env map for realistic stainless reflections ----
+      (function () {
+        var pmrem = new THREE.PMREMGenerator(renderer);
+        var envScene = new THREE.Scene();
+        envScene.background = new THREE.Color(0x2a3a52);
+        var top = new THREE.Mesh(new THREE.SphereGeometry(80, 16, 16), new THREE.MeshBasicMaterial({ color: 0xe7f0ff })); top.position.y = 40; envScene.add(top);
+        var side1 = new THREE.Mesh(new THREE.SphereGeometry(20), new THREE.MeshBasicMaterial({ color: 0xbfd4ff })); side1.position.set(30, 10, 20); envScene.add(side1);
+        var side2 = new THREE.Mesh(new THREE.SphereGeometry(20), new THREE.MeshBasicMaterial({ color: 0x9ec5ff })); side2.position.set(-30, 10, -20); envScene.add(side2);
+        var bottom = new THREE.Mesh(new THREE.SphereGeometry(50), new THREE.MeshBasicMaterial({ color: 0x0b1424 })); bottom.position.y = -30; envScene.add(bottom);
+        scene.environment = pmrem.fromScene(envScene, 0.1).texture;
+        pmrem.dispose();
+      })();
+
+      // Materials · stainless steel
+      // BRUSHED — square frame tubes, transition pieces (matte finish)
       var frameMat = new THREE.MeshStandardMaterial({
-        color: 0xc8cdd4, metalness: 0.92, roughness: 0.32
+        color: 0xc5cbd3, metalness: 0.88, roughness: 0.58, envMapIntensity: 0.95
       });
+      // POLISHED — round pickets (high-gloss mirror finish)
       var picketMat = new THREE.MeshStandardMaterial({
-        color: 0xd8dde4, metalness: 0.95, roughness: 0.2
+        color: 0xeaeef3, metalness: 0.98, roughness: 0.08, envMapIntensity: 1.5
       });
+      // BRUSHED slightly darker — transition pieces (corners)
       var transMat = new THREE.MeshStandardMaterial({
-        color: 0xa0a5ac, metalness: 0.85, roughness: 0.45
+        color: 0xbcc2ca, metalness: 0.85, roughness: 0.62, envMapIntensity: 0.9
       });
       var trackMat = new THREE.MeshStandardMaterial({
         color: 0x6a6f76, metalness: 0.7, roughness: 0.55
