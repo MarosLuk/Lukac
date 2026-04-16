@@ -131,13 +131,23 @@
     background: rgba(6,25,52,0.7); padding: 1px 4px;
   }
 
-  /* Mobile: stack vertically but small */
+  /* Mobile: allow scroll, give canvases readable min-height */
   @media (max-width: 900px) {
-    .bp-body { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+    html, body { height: auto; }
+    body { overflow-y: auto; overflow-x: hidden; }
+    #blueprint { overflow: visible; flex: 0 0 auto; min-height: calc(100vh - 110px); padding-bottom: 20px; }
+    .bp-frame { height: auto; min-height: calc(100vh - 130px); }
+    .bp-body {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto;
+      grid-auto-rows: minmax(280px, auto);
+    }
     .bp-canvas:nth-child(3) { grid-column: 1 / -1; }
+    .bp-canvas { min-height: 280px; }
   }
   @media (max-width: 520px) {
-    .bp-body { grid-template-columns: 1fr; grid-template-rows: repeat(3, 1fr); }
+    .bp-body { grid-template-columns: 1fr; grid-auto-rows: minmax(340px, auto); }
+    .bp-canvas { min-height: 340px; }
     .bp-canvas:nth-child(3) { grid-column: auto; }
     .bp-header { font-size: 9px; }
     .bp-title { font-size: 11px; }
@@ -438,11 +448,31 @@
       floor.receiveShadow = true;
       scene.add(floor);
 
-      var steel = new THREE.MeshStandardMaterial({
-        color: 0xc8cdd4, metalness: 0.9, roughness: 0.35
+      // ---- Env map for realistic stainless reflections ----
+      (function () {
+        var pmrem = new THREE.PMREMGenerator(renderer);
+        var envScene = new THREE.Scene();
+        envScene.background = new THREE.Color(0x2a3a52);
+        var top = new THREE.Mesh(new THREE.SphereGeometry(80, 16, 16), new THREE.MeshBasicMaterial({ color: 0xe7f0ff })); top.position.y = 40; envScene.add(top);
+        var side1 = new THREE.Mesh(new THREE.SphereGeometry(20), new THREE.MeshBasicMaterial({ color: 0xbfd4ff })); side1.position.set(30, 10, 20); envScene.add(side1);
+        var side2 = new THREE.Mesh(new THREE.SphereGeometry(20), new THREE.MeshBasicMaterial({ color: 0x9ec5ff })); side2.position.set(-30, 10, -20); envScene.add(side2);
+        var bottom = new THREE.Mesh(new THREE.SphereGeometry(50), new THREE.MeshBasicMaterial({ color: 0x0b1424 })); bottom.position.y = -30; envScene.add(bottom);
+        scene.environment = pmrem.fromScene(envScene, 0.1).texture;
+        pmrem.dispose();
+      })();
+
+      // Brushed stainless — used for boxes (body / housing)
+      var brushed = new THREE.MeshStandardMaterial({
+        color: 0xc5cbd3, metalness: 0.88, roughness: 0.58, envMapIntensity: 0.95
       });
+      // Polished stainless — used for round pipes (high gloss)
+      var polished = new THREE.MeshStandardMaterial({
+        color: 0xeaeef3, metalness: 0.98, roughness: 0.08, envMapIntensity: 1.5
+      });
+      // Keep `steel` as an alias so existing code keeps working where it refers to a generic steel
+      var steel = brushed;
       var innerMat = new THREE.MeshStandardMaterial({
-        color: 0x2a2a30, metalness: 0.6, roughness: 0.8, side: THREE.DoubleSide
+        color: 0x1c1c22, metalness: 0.5, roughness: 0.9, side: THREE.DoubleSide
       });
       var weldMat = new THREE.MeshStandardMaterial({
         color: 0x7a6a55, metalness: 0.4, roughness: 0.7
@@ -450,10 +480,10 @@
 
       group = new THREE.Group();
 
-      // horná vertikálna rúra
+      // horná vertikálna rúra (POLISHED — round pipe)
       var topPipe = new THREE.Mesh(
         new THREE.CylinderGeometry(0.9, 0.9, 1.2, 48, 1, true),
-        steel.clone()
+        polished.clone()
       );
       topPipe.material.side = THREE.DoubleSide;
       topPipe.position.set(-1.2, 1.4, 0);
@@ -489,7 +519,7 @@
 
       var rightPipe = new THREE.Mesh(
         new THREE.CylinderGeometry(0.8, 0.8, 1.2, 48, 1, true),
-        steel.clone()
+        polished.clone()
       );
       rightPipe.material.side = THREE.DoubleSide;
       rightPipe.rotation.z = Math.PI / 2;
