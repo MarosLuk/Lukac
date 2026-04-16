@@ -268,7 +268,7 @@
 <header class="page-header">
   <span class="ph-mark">◆ IDENT · 00-002 · V2</span>
   <span class="ph-name">NAZOV SPOLOCNOSTI</span>
-  <span class="ph-meta">BUILD v2026.04.16-r3 · ASSEMBLY</span>
+  <span class="ph-meta">BUILD v2026.04.16-r5 · ASSEMBLY</span>
 </header>
 
 <!-- ===================== BLUEPRINT ===================== -->
@@ -456,7 +456,7 @@
   <span>© 2026 NAZOV SPOLOCNOSTI · s.r.o.</span>
   <span>IČO 00 000 000 · DIČ 20 000 000 00</span>
   <span>info@nazovspolocnosti.sk · +421 000 000 000</span>
-  <span style="opacity:.6">BUILD v2026.04.16-r3</span>
+  <span style="opacity:.6">BUILD v2026.04.16-r5</span>
 </footer>
 
 <!-- ===================== 3D VIEWER ===================== -->
@@ -773,34 +773,52 @@
   }
 
   function transitionPiece(mat) {
+    // Detailed V1-style corner: tall upper block + lower connector +
+    // protruding horizontal round pipe with weld seam
     var g = new THREE.Group();
-    var base = new THREE.Mesh(
-      new THREE.BoxGeometry(TS * 1.4, TS * 1.4, TS * 1.4),
+    var s = TS;
+    var innerVoid = new THREE.MeshStandardMaterial({
+      color: 0x1a1a1e, metalness: 0.4, roughness: 0.9, side: THREE.DoubleSide
+    });
+    var weldMat = new THREE.MeshStandardMaterial({
+      color: 0x8f7c60, metalness: 0.4, roughness: 0.65
+    });
+
+    // upper block (matches square tube cross-section, taller)
+    var upper = new THREE.Mesh(new THREE.BoxGeometry(s * 1.0, s * 1.3, s * 1.0), mat.clone());
+    upper.position.y = s * 0.75;
+    upper.castShadow = true; upper.receiveShadow = true;
+    g.add(upper);
+    // lower connector block (slightly wider, provides pipe attachment)
+    var lower = new THREE.Mesh(new THREE.BoxGeometry(s * 1.3, s * 0.55, s * 1.3), mat.clone());
+    lower.position.y = -s * 0.2;
+    lower.castShadow = true; lower.receiveShadow = true;
+    g.add(lower);
+    // horizontal round pipe protruding forward (+Z)
+    var pipe = new THREE.Mesh(
+      new THREE.CylinderGeometry(s * 0.55, s * 0.55, s * 1.1, 20, 1, true),
       mat.clone()
     );
-    base.castShadow = true;
-    base.receiveShadow = true;
-    g.add(base);
-
-    var collar = new THREE.Mesh(
-      new THREE.CylinderGeometry(TS * 0.55, TS * 0.55, TS * 0.6, 20, 1),
-      mat.clone()
+    pipe.rotation.x = Math.PI / 2;
+    pipe.position.set(0, -s * 0.2, s * 1.0);
+    pipe.castShadow = true; pipe.receiveShadow = true;
+    g.add(pipe);
+    // inner dark void inside the pipe
+    var inner = new THREE.Mesh(
+      new THREE.CylinderGeometry(s * 0.42, s * 0.42, s * 1.12, 20, 1, true),
+      innerVoid
     );
-    collar.rotation.x = Math.PI / 2;
-    collar.position.z = TS * 0.9;
-    collar.castShadow = true;
-    g.add(collar);
-
-    // inner dark ring
-    var ring = new THREE.Mesh(
-      new THREE.CylinderGeometry(TS * 0.42, TS * 0.42, TS * 0.62, 20, 1, true),
-      new THREE.MeshStandardMaterial({
-        color: 0x1a1a1e, metalness: 0.4, roughness: 0.9, side: THREE.DoubleSide
-      })
+    inner.rotation.x = Math.PI / 2;
+    inner.position.set(0, -s * 0.2, s * 1.0);
+    g.add(inner);
+    // weld ring at the pipe-block joint
+    var weld = new THREE.Mesh(
+      new THREE.TorusGeometry(s * 0.55, s * 0.045, 8, 20),
+      weldMat
     );
-    ring.rotation.x = Math.PI / 2;
-    ring.position.z = TS * 0.9;
-    g.add(ring);
+    weld.rotation.x = Math.PI / 2;
+    weld.position.set(0, -s * 0.2, s * 0.52);
+    g.add(weld);
 
     return g;
   }
