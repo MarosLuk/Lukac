@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0b1f3a" />
+<title>Blueprint → 3D | Prechodový kus</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { width: 100%; height: 100%; font-family: 'Courier New', monospace; }
+  body {
+    background: #0b1f3a;
+    color: #e7f0ff;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+
+  /* ---------- PAGE HEADER / FOOTER ---------- */
+  .page-header, .page-footer {
+    position: relative;
+    z-index: 4;
+    background: #061934;
+    border-color: #9ec5ff;
+    color: #e7f0ff;
+    font-family: 'Courier New', monospace;
+    flex-shrink: 0;
+  }
+  .page-header {
+    border-bottom: 1px solid rgba(158,197,255,0.35);
+    padding: 10px 18px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    letter-spacing: 2px;
+  }
+  .page-header .ph-mark {
+    font-size: 10px; opacity: 0.7;
+  }
+  .page-header .ph-name {
+    font-size: 14px; font-weight: bold; letter-spacing: 4px;
+    text-align: center; flex: 1;
+  }
+  .page-header .ph-meta {
+    font-size: 10px; opacity: 0.8; text-align: right;
+  }
+
+  .page-footer {
+    border-top: 1px solid rgba(158,197,255,0.35);
+    padding: 8px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; font-size: 9.5px; letter-spacing: 1.5px;
+    color: #9ec5ff;
+  }
+  .page-footer span { white-space: nowrap; }
+
+  @media (max-width: 720px) {
+    .page-header { padding: 8px 12px; }
+    .page-header .ph-name { font-size: 11px; letter-spacing: 2px; }
+    .page-header .ph-mark, .page-header .ph-meta { display: none; }
+    .page-footer { padding: 6px 10px; font-size: 8.5px; letter-spacing: 1px; flex-wrap: wrap; justify-content: center; }
+  }
+
+  /* ---------- BLUEPRINT ---------- */
+  #blueprint {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    background: radial-gradient(ellipse at center, #174a8a 0%, #0b2752 60%, #061934 100%);
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 1.2s ease, transform 1.2s ease;
+    z-index: 2;
+    padding: 10px;
+    overflow: hidden;
+  }
+  #blueprint::before {
+    content: "";
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.07) 1px, transparent 1px),
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
+    pointer-events: none;
+  }
+  #blueprint.hidden { opacity: 0; transform: scale(1.04); pointer-events: none; }
+
+  .bp-frame {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    max-width: 1200px;
+    border: 2px solid #9ec5ff;
+    box-shadow: 0 0 30px rgba(158,197,255,0.15), inset 0 0 30px rgba(158,197,255,0.05);
+    padding: 10px 14px;
+    display: flex; flex-direction: column;
+    gap: 6px;
+  }
+  .bp-header {
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;
+    border-bottom: 1px dashed #9ec5ff;
+    padding-bottom: 6px;
+    font-size: 10px; letter-spacing: 1.5px; color: #cfe1ff;
+    flex-shrink: 0;
+  }
+  .bp-title { font-size: 12px; font-weight: bold; }
+  .bp-sub { opacity: 0.8; font-size: 9.5px; }
+  .bp-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .bp-canvas {
+    position: relative;
+    border: 1px dashed rgba(158,197,255,0.35);
+    width: 100%; height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .bp-canvas svg { width: 100%; height: 100%; display: block; }
+  .bp-footer {
+    border-top: 1px dashed #9ec5ff;
+    padding-top: 6px;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px;
+    font-size: 9.5px; color: #cfe1ff;
+    flex-shrink: 0;
+  }
+  .bp-canvas-label {
+    position: absolute; bottom: 3px; left: 6px;
+    font-size: 9px; color: #9ec5ff; letter-spacing: 1.5px;
+    background: rgba(6,25,52,0.7); padding: 1px 4px;
+  }
+
+  /* Mobile: stack vertically but small */
+  @media (max-width: 900px) {
+    .bp-body { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+    .bp-canvas:nth-child(3) { grid-column: 1 / -1; }
+  }
+  @media (max-width: 520px) {
+    .bp-body { grid-template-columns: 1fr; grid-template-rows: repeat(3, 1fr); }
+    .bp-canvas:nth-child(3) { grid-column: auto; }
+    .bp-header { font-size: 9px; }
+    .bp-title { font-size: 11px; }
+    .bp-frame { padding: 8px 10px; }
+  }
+
+  .bp-canvas svg .ink {
+    fill: none; stroke: #cfe1ff; stroke-width: 1.4;
+    stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 2000; stroke-dashoffset: 2000;
+    animation: draw 2.2s ease forwards;
+  }
+  .bp-canvas svg .ink.d2 { animation-delay: 0.3s; }
+  .bp-canvas svg .ink.d3 { animation-delay: 0.6s; }
+  .bp-canvas svg .ink.d4 { animation-delay: 0.9s; }
+  .bp-canvas svg .ink.thin {
+    stroke-width: 0.8; stroke-dasharray: 4 4;
+    animation: fadeIn 0.8s 1.6s ease forwards;
+    opacity: 0;
+  }
+  .bp-canvas svg .dim {
+    fill: #9ec5ff; font-size: 11px; font-family: 'Courier New', monospace;
+    opacity: 0; animation: fadeIn 0.8s 1.8s ease forwards;
+  }
+  .bp-canvas svg .arrow {
+    stroke: #9ec5ff; stroke-width: 0.8; fill: #9ec5ff;
+    opacity: 0; animation: fadeIn 0.8s 1.8s ease forwards;
+  }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  @keyframes fadeIn { to { opacity: 1; } }
+
+  .bp-cta {
+    background: #0b1f3a; border: 1px solid #9ec5ff; color: #e7f0ff;
+    padding: 8px 18px; letter-spacing: 2px; font-size: 12px;
+    cursor: pointer; font-family: 'Courier New', monospace;
+    align-self: center;
+    touch-action: manipulation;
+    flex-shrink: 0;
+  }
+  .bp-cta:active, .bp-cta:hover { background: #9ec5ff; color: #0b1f3a; }
+
+  /* ---------- 3D VIEWER ---------- */
+  #viewer {
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at center, #2a2f3a 0%, #111318 80%);
+    opacity: 0; transition: opacity 1s ease 0.3s;
+    z-index: 1;
+    pointer-events: none;
+  }
+  #viewer.visible { opacity: 1; z-index: 5; pointer-events: auto; }
+  #viewer canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+  .hud {
+    position: absolute; top: env(safe-area-inset-top, 14px); left: 14px;
+    color: #e7f0ff; font-family: 'Courier New', monospace;
+    letter-spacing: 2px; pointer-events: none;
+    padding-top: 8px;
+  }
+  .hud h1 { font-size: 11px; font-weight: normal; opacity: 0.8; }
+  .hud h2 { font-size: 16px; margin-top: 4px; }
+
+  .hud-legend {
+    position: absolute; bottom: calc(env(safe-area-inset-bottom, 14px) + 14px); left: 14px;
+    color: #9ec5ff; font-family: 'Courier New', monospace;
+    font-size: 10px; letter-spacing: 2px; opacity: 0.85;
+  }
+  .back-btn {
+    position: absolute; top: calc(env(safe-area-inset-top, 0px) + 14px); right: 14px;
+    background: transparent; border: 1px solid #9ec5ff; color: #e7f0ff;
+    padding: 10px 14px; font-family: 'Courier New', monospace;
+    letter-spacing: 2px; cursor: pointer; font-size: 11px;
+    touch-action: manipulation;
+  }
+  .back-btn:active, .back-btn:hover { background: #9ec5ff; color: #0b1f3a; }
+
+  .stamp { font-size: 9px; letter-spacing: 2px; opacity: 0.7; }
+
+  .err {
+    position: fixed; inset: auto 10px 10px 10px;
+    background: #400; color: #fff; padding: 10px; font-size: 12px; z-index: 99;
+    border: 1px solid #f66; display: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== PAGE HEADER ===================== -->
+<header class="page-header">
+  <span class="ph-mark">◆ IDENT · 00-000</span>
+  <span class="ph-name">NAZOV SPOLOCNOSTI</span>
+  <span class="ph-meta">STR. 1 / 1 · V.2026.04</span>
+</header>
+
+<!-- ===================== BLUEPRINT ===================== -->
+<section id="blueprint">
+  <div class="bp-frame">
+    <div class="bp-header">
+      <div class="bp-title">TECHNICKÝ VÝKRES · PRECHODOVÝ KUS</div>
+      <div class="bp-sub">DWG-001 · NEREZ · M 1:2</div>
+    </div>
+
+    <div class="bp-body">
+      <!-- POHĽAD SPREDU -->
+      <div class="bp-canvas">
+        <svg viewBox="0 0 500 400" preserveAspectRatio="xMidYMid meet">
+          <path class="ink thin" d="M 150 20 L 150 260" />
+          <path class="ink thin" d="M 90 320 L 480 320" />
+
+          <ellipse class="ink" cx="150" cy="40" rx="45" ry="12" />
+          <path class="ink" d="M 105 40 L 105 140" />
+          <path class="ink" d="M 195 40 L 195 140" />
+          <path class="ink thin" d="M 105 140 Q 150 152 195 140" />
+
+          <path class="ink d2" d="M 80 140 L 220 140 L 220 260 L 80 260 Z" />
+          <path class="ink thin" d="M 80 140 L 105 120 L 245 120 L 220 140" />
+          <path class="ink thin" d="M 245 120 L 245 240 L 220 260" />
+
+          <path class="ink d3" d="M 80 260 L 360 260 L 360 380 L 80 380 Z" />
+          <path class="ink thin" d="M 80 260 L 105 240 L 385 240 L 360 260" />
+          <path class="ink thin" d="M 385 240 L 385 360 L 360 380" />
+
+          <path class="ink d4" d="M 360 280 L 460 280" />
+          <path class="ink d4" d="M 360 360 L 460 360" />
+          <ellipse class="ink d4" cx="460" cy="320" rx="12" ry="40" />
+          <path class="ink thin d4" d="M 360 280 Q 372 320 360 360" />
+
+          <path class="arrow" d="M 60 140 L 60 260" />
+          <path class="arrow" d="M 56 140 L 64 140" />
+          <path class="arrow" d="M 56 260 L 64 260" />
+          <text class="dim" x="30" y="205" transform="rotate(-90 30 205)">120 mm</text>
+
+          <path class="arrow" d="M 80 395 L 360 395" />
+          <path class="arrow" d="M 80 391 L 80 399" />
+          <path class="arrow" d="M 360 391 L 360 399" />
+          <text class="dim" x="200" y="392">280 mm</text>
+
+          <text class="dim" x="115" y="15">⌀ 90</text>
+          <text class="dim" x="420" y="270">⌀ 80</text>
+        </svg>
+        <div class="bp-canvas-label">POHĽAD SPREDU</div>
+      </div>
+
+      <!-- POHĽAD ZHORA -->
+      <div class="bp-canvas">
+        <svg viewBox="0 0 500 400" preserveAspectRatio="xMidYMid meet">
+          <circle class="ink" cx="150" cy="150" r="45" />
+          <circle class="ink thin" cx="150" cy="150" r="38" />
+
+          <path class="ink d2" d="M 80 80 L 220 80 L 220 220 L 80 220 Z" />
+          <path class="ink d3" d="M 220 100 L 380 100 L 380 200 L 220 200" />
+
+          <path class="ink d4" d="M 380 100 L 460 100" />
+          <path class="ink d4" d="M 380 200 L 460 200" />
+          <circle class="ink d4" cx="460" cy="150" r="50" />
+          <circle class="ink thin d4" cx="460" cy="150" r="42" />
+
+          <path class="ink thin" d="M 30 150 L 490 150" />
+          <path class="ink thin" d="M 150 30 L 150 240" />
+
+          <path class="arrow" d="M 80 50 L 380 50" />
+          <path class="arrow" d="M 80 46 L 80 54" />
+          <path class="arrow" d="M 380 46 L 380 54" />
+          <text class="dim" x="190" y="45">CELKOM 300 mm</text>
+
+          <text class="dim" x="115" y="155">⌀ 90</text>
+          <text class="dim" x="430" y="155">⌀ 80</text>
+        </svg>
+        <div class="bp-canvas-label">POHĽAD ZHORA</div>
+      </div>
+
+      <!-- POHĽAD ZBOKU -->
+      <div class="bp-canvas">
+        <svg viewBox="0 0 500 400" preserveAspectRatio="xMidYMid meet">
+          <path class="ink thin" d="M 150 20 L 150 380" />
+          <path class="ink thin" d="M 40 320 L 480 320" />
+
+          <ellipse class="ink" cx="150" cy="40" rx="45" ry="12" />
+          <path class="ink" d="M 105 40 L 105 140" />
+          <path class="ink" d="M 195 40 L 195 140" />
+          <path class="ink thin" d="M 105 140 Q 150 152 195 140" />
+
+          <path class="ink d2" d="M 80 140 L 220 140 L 220 260 L 80 260 Z" />
+          <path class="ink thin" d="M 80 140 L 105 120 L 245 120 L 220 140" />
+          <path class="ink thin" d="M 245 120 L 245 240 L 220 260" />
+
+          <path class="ink d3" d="M 80 260 L 220 260 L 220 380 L 80 380 Z" />
+          <path class="ink thin" d="M 80 260 L 105 240 L 245 240 L 220 260" />
+          <path class="ink thin" d="M 245 240 L 245 360 L 220 380" />
+
+          <circle class="ink d4" cx="150" cy="320" r="40" />
+          <circle class="ink thin d4" cx="150" cy="320" r="32" />
+
+          <path class="arrow" d="M 60 140 L 60 380" />
+          <path class="arrow" d="M 56 140 L 64 140" />
+          <path class="arrow" d="M 56 380 L 64 380" />
+          <text class="dim" x="30" y="265" transform="rotate(-90 30 265)">240 mm</text>
+
+          <path class="arrow" d="M 80 395 L 220 395" />
+          <path class="arrow" d="M 80 391 L 80 399" />
+          <path class="arrow" d="M 220 391 L 220 399" />
+          <text class="dim" x="125" y="392">140 mm</text>
+
+          <text class="dim" x="115" y="15">⌀ 90</text>
+          <text class="dim" x="195" y="325">⌀ 80</text>
+        </svg>
+        <div class="bp-canvas-label">POHĽAD ZBOKU</div>
+      </div>
+    </div>
+
+    <div class="bp-footer">
+      <span class="stamp">AUTOR: LUKAC · 2026-04-16</span>
+      <span class="stamp">TOL. ±0.2 mm · ZVAR: TIG</span>
+      <span class="stamp">REV. A</span>
+    </div>
+
+    <button class="bp-cta" id="goBtn">► ZOBRAZIŤ V 3D</button>
+  </div>
+</section>
+
+<!-- ===================== PAGE FOOTER ===================== -->
+<footer class="page-footer">
+  <span>© 2026 NAZOV SPOLOCNOSTI · s.r.o.</span>
+  <span>IČO 00 000 000 · DIČ 20 000 000 00</span>
+  <span>info@nazovspolocnosti.sk · +421 000 000 000</span>
+</footer>
+
+<!-- ===================== 3D VIEWER ===================== -->
+<section id="viewer">
+  <div class="hud">
+    <h1>// 3D PREVIEW</h1>
+    <h2>PRECHODOVÝ KUS — NEREZ</h2>
+  </div>
+  <div class="hud-legend">AUTOMATICKÁ ROTÁCIA · 360°</div>
+  <button class="back-btn" id="backBtn">← BLUEPRINT</button>
+</section>
+
+<div class="err" id="err"></div>
+
+<!-- Klasický non-module Three.js build pre maximálnu kompatibilitu s mobilmi -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+(function () {
+  var goBtn = document.getElementById('goBtn');
+  var backBtn = document.getElementById('backBtn');
+  var bp = document.getElementById('blueprint');
+  var viewer = document.getElementById('viewer');
+  var errBox = document.getElementById('err');
+
+  function showErr(msg) {
+    errBox.style.display = 'block';
+    errBox.textContent = msg;
+  }
+
+  var started = false;
+  var scene, camera, renderer, group, lastTs;
+
+  function initThree() {
+    if (typeof THREE === 'undefined') {
+      showErr('Nepodarilo sa načítať 3D knižnicu. Skontroluj pripojenie.');
+      return false;
+    }
+    try {
+      scene = new THREE.Scene();
+
+      camera = new THREE.PerspectiveCamera(
+        40, window.innerWidth / window.innerHeight, 0.1, 1000
+      );
+      camera.position.set(6, 4, 8);
+      camera.lookAt(0, 0, 0);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      viewer.appendChild(renderer.domElement);
+
+      var hemi = new THREE.HemisphereLight(0xbfd4ff, 0x222233, 0.6);
+      scene.add(hemi);
+      var key = new THREE.DirectionalLight(0xffffff, 1.1);
+      key.position.set(5, 8, 5);
+      key.castShadow = true;
+      key.shadow.mapSize.set(1024, 1024);
+      scene.add(key);
+      var fill = new THREE.DirectionalLight(0x9ec5ff, 0.5);
+      fill.position.set(-5, 3, -4);
+      scene.add(fill);
+      var rim = new THREE.DirectionalLight(0xffffff, 0.4);
+      rim.position.set(0, -5, -5);
+      scene.add(rim);
+
+      var floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(30, 30),
+        new THREE.ShadowMaterial({ opacity: 0.25 })
+      );
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.y = -2.2;
+      floor.receiveShadow = true;
+      scene.add(floor);
+
+      var steel = new THREE.MeshStandardMaterial({
+        color: 0xc8cdd4, metalness: 0.9, roughness: 0.35
+      });
+      var innerMat = new THREE.MeshStandardMaterial({
+        color: 0x2a2a30, metalness: 0.6, roughness: 0.8, side: THREE.DoubleSide
+      });
+      var weldMat = new THREE.MeshStandardMaterial({
+        color: 0x7a6a55, metalness: 0.4, roughness: 0.7
+      });
+
+      group = new THREE.Group();
+
+      // horná vertikálna rúra
+      var topPipe = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.9, 0.9, 1.2, 48, 1, true),
+        steel.clone()
+      );
+      topPipe.material.side = THREE.DoubleSide;
+      topPipe.position.set(-1.2, 1.4, 0);
+      topPipe.castShadow = true;
+      group.add(topPipe);
+
+      var topBox = new THREE.Mesh(
+        new THREE.BoxGeometry(1.8, 1.4, 1.8), steel.clone()
+      );
+      topBox.position.set(-1.2, 0.1, 0);
+      topBox.castShadow = true; topBox.receiveShadow = true;
+      group.add(topBox);
+
+      var innerTop = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.82, 0.82, 1.42, 48, 1, true), innerMat
+      );
+      innerTop.position.set(-1.2, 1.4, 0);
+      group.add(innerTop);
+
+      var horBox = new THREE.Mesh(
+        new THREE.BoxGeometry(2.8, 1.4, 1.8), steel.clone()
+      );
+      horBox.position.set(0.2, -1.1, 0);
+      horBox.castShadow = true; horBox.receiveShadow = true;
+      group.add(horBox);
+
+      var linkBox = new THREE.Mesh(
+        new THREE.BoxGeometry(1.8, 0.8, 1.8), steel.clone()
+      );
+      linkBox.position.set(-1.2, -0.8, 0);
+      linkBox.castShadow = true;
+      group.add(linkBox);
+
+      var rightPipe = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.8, 0.8, 1.2, 48, 1, true),
+        steel.clone()
+      );
+      rightPipe.material.side = THREE.DoubleSide;
+      rightPipe.rotation.z = Math.PI / 2;
+      rightPipe.position.set(2.2, -1.1, 0);
+      rightPipe.castShadow = true;
+      group.add(rightPipe);
+
+      var innerRight = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.72, 0.72, 1.22, 48, 1, true), innerMat
+      );
+      innerRight.rotation.z = Math.PI / 2;
+      innerRight.position.set(2.2, -1.1, 0);
+      group.add(innerRight);
+
+      var weld1 = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.04, 8, 32), weldMat);
+      weld1.rotation.x = Math.PI / 2;
+      weld1.position.set(-1.2, 0.82, 0);
+      group.add(weld1);
+
+      var weld2 = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.04, 8, 32), weldMat);
+      weld2.rotation.y = Math.PI / 2;
+      weld2.position.set(1.62, -1.1, 0);
+      group.add(weld2);
+
+      var bbox = new THREE.Box3().setFromObject(group);
+      var center = new THREE.Vector3();
+      bbox.getCenter(center);
+      group.position.sub(center);
+
+      scene.add(group);
+
+      // adaptácia kamery pre úzke obrazovky
+      fitCameraToScreen();
+
+      window.addEventListener('resize', onResize);
+      window.addEventListener('orientationchange', onResize);
+
+      return true;
+    } catch (e) {
+      showErr('3D chyba: ' + e.message);
+      return false;
+    }
+  }
+
+  function fitCameraToScreen() {
+    var aspect = window.innerWidth / window.innerHeight;
+    if (aspect < 1) {
+      camera.position.set(7, 4.5, 9.5);
+    } else {
+      camera.position.set(6, 4, 8);
+    }
+    camera.lookAt(0, 0, 0);
+    camera.updateProjectionMatrix();
+  }
+
+  function onResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    fitCameraToScreen();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  function animate(ts) {
+    requestAnimationFrame(animate);
+    if (!lastTs) lastTs = ts;
+    var dt = Math.min(0.05, (ts - lastTs) / 1000);
+    lastTs = ts;
+    if (group) {
+      group.rotation.y += dt * 0.35;
+      group.rotation.x = Math.sin((ts || 0) * 0.0004) * 0.08;
+    }
+    renderer.render(scene, camera);
+  }
+
+  function goToViewer() {
+    bp.classList.add('hidden');
+    viewer.classList.add('visible');
+    if (!started) {
+      if (initThree()) {
+        started = true;
+        requestAnimationFrame(animate);
+      }
+    }
+  }
+
+  function backToBlueprint() {
+    bp.classList.remove('hidden');
+    viewer.classList.remove('visible');
+  }
+
+  ['click', 'touchend'].forEach(function (ev) {
+    goBtn.addEventListener(ev, function (e) { e.preventDefault(); goToViewer(); }, { passive: false });
+    backBtn.addEventListener(ev, function (e) { e.preventDefault(); backToBlueprint(); }, { passive: false });
+  });
+})();
+</script>
+</body>
+</html>
