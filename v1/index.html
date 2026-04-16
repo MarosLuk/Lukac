@@ -243,7 +243,7 @@
 <header class="page-header">
   <span class="ph-mark">◆ IDENT · 00-000 · V1</span>
   <span class="ph-name">NAZOV SPOLOCNOSTI</span>
-  <span class="ph-meta">BUILD v2026.04.16-r8 · STR. 1/1</span>
+  <span class="ph-meta">BUILD v2026.04.16-r9 · STR. 1/1</span>
 </header>
 
 <!-- ===================== BLUEPRINT ===================== -->
@@ -363,7 +363,7 @@
   <span>© 2026 NAZOV SPOLOCNOSTI · s.r.o.</span>
   <span>IČO 00 000 000 · DIČ 20 000 000 00</span>
   <span>info@nazovspolocnosti.sk · +421 000 000 000</span>
-  <span style="opacity:.6">BUILD v2026.04.16-r8</span>
+  <span style="opacity:.6">BUILD v2026.04.16-r9</span>
 </footer>
 
 <!-- ===================== 3D VIEWER ===================== -->
@@ -477,65 +477,66 @@
 
       group = new THREE.Group();
 
-      // ========== PRECHODOVÝ KUS — simplified body + 2 perpendicular plugs ==========
-      // Matches V2/V3 transition piece design based on real photo:
-      // one cubic body, one plug going UP (into vertical square tube),
-      // one plug going RIGHT (into horizontal square tube).
+      // ========== PRECHODOVÝ KUS — identical design to V3, just scaled up ==========
+      // Cubic body + two perpendicular short cylindrical plugs.
+      // Both plugs share exact same radius, length and weld — matches V3.
+      (function () {
+        var s = 1.8;                    // V1 scale (V3 uses s = TS = 0.28)
+        var plugLen  = s * 0.55;
+        var plugR    = s * 0.42;
+        var bodyHalf = s * 0.525;
+        var plugOffset = bodyHalf + plugLen * 0.5;
 
-      // Cubic body
-      var transBody = new THREE.Mesh(
-        new THREE.BoxGeometry(1.8, 1.8, 1.8),
-        brushed.clone()
-      );
-      transBody.castShadow = true; transBody.receiveShadow = true;
-      group.add(transBody);
-      var transEdges = new THREE.LineSegments(
-        new THREE.EdgesGeometry(transBody.geometry),
-        new THREE.LineBasicMaterial({ color: 0xe6ebf2, transparent: true, opacity: 0.35 })
-      );
-      transBody.add(transEdges);
+        // body
+        var body = new THREE.Mesh(
+          new THREE.BoxGeometry(s * 1.05, s * 1.05, s * 1.05),
+          brushed.clone()
+        );
+        body.castShadow = true; body.receiveShadow = true;
+        group.add(body);
 
-      // Upper vertical plug (polished) — goes UP (+Y) from body top
-      var topPipe = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.65, 0.65, 0.7, 32, 1, true),
-        polished.clone()
-      );
-      topPipe.material.side = THREE.DoubleSide;
-      topPipe.position.set(0, 0.9 + 0.35, 0);
-      topPipe.castShadow = true;
-      group.add(topPipe);
-      var topInner = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.52, 0.52, 0.72, 28, 1, true), innerMat
-      );
-      topInner.position.set(0, 0.9 + 0.35, 0);
-      group.add(topInner);
-      // weld torus at body-top pipe junction
-      var topWeld = new THREE.Mesh(new THREE.TorusGeometry(0.65, 0.045, 8, 28), weldMat);
-      topWeld.rotation.x = Math.PI / 2;
-      topWeld.position.set(0, 0.9, 0);
-      group.add(topWeld);
+        // vertical plug (+Y) — up
+        var vp = new THREE.Mesh(
+          new THREE.CylinderGeometry(plugR, plugR, plugLen, 32, 1, true),
+          polished.clone()
+        );
+        vp.material.side = THREE.DoubleSide;
+        vp.position.y = plugOffset;
+        vp.castShadow = true; vp.receiveShadow = true;
+        group.add(vp);
+        var vpInner = new THREE.Mesh(
+          new THREE.CylinderGeometry(plugR * 0.8, plugR * 0.8, plugLen + 0.005, 28, 1, true),
+          innerMat
+        );
+        vpInner.position.y = plugOffset;
+        group.add(vpInner);
+        var vpWeld = new THREE.Mesh(new THREE.TorusGeometry(plugR, s * 0.035, 8, 28), weldMat);
+        vpWeld.rotation.x = Math.PI / 2;
+        vpWeld.position.y = bodyHalf;
+        group.add(vpWeld);
 
-      // Right horizontal plug (polished) — goes RIGHT (+X) from body side
-      var rightPipe = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.6, 0.6, 0.7, 32, 1, true),
-        polished.clone()
-      );
-      rightPipe.material.side = THREE.DoubleSide;
-      rightPipe.rotation.z = Math.PI / 2;
-      rightPipe.position.set(0.9 + 0.35, 0, 0);
-      rightPipe.castShadow = true;
-      group.add(rightPipe);
-      var rightInner = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.48, 0.48, 0.72, 28, 1, true), innerMat
-      );
-      rightInner.rotation.z = Math.PI / 2;
-      rightInner.position.set(0.9 + 0.35, 0, 0);
-      group.add(rightInner);
-      // weld torus at body-right pipe junction
-      var rightWeld = new THREE.Mesh(new THREE.TorusGeometry(0.6, 0.045, 8, 28), weldMat);
-      rightWeld.rotation.y = Math.PI / 2;
-      rightWeld.position.set(0.9, 0, 0);
-      group.add(rightWeld);
+        // horizontal plug (+X) — right
+        var hp = new THREE.Mesh(
+          new THREE.CylinderGeometry(plugR, plugR, plugLen, 32, 1, true),
+          polished.clone()
+        );
+        hp.material.side = THREE.DoubleSide;
+        hp.rotation.z = Math.PI / 2;
+        hp.position.x = plugOffset;
+        hp.castShadow = true; hp.receiveShadow = true;
+        group.add(hp);
+        var hpInner = new THREE.Mesh(
+          new THREE.CylinderGeometry(plugR * 0.8, plugR * 0.8, plugLen + 0.005, 28, 1, true),
+          innerMat
+        );
+        hpInner.rotation.z = Math.PI / 2;
+        hpInner.position.x = plugOffset;
+        group.add(hpInner);
+        var hpWeld = new THREE.Mesh(new THREE.TorusGeometry(plugR, s * 0.035, 8, 28), weldMat);
+        hpWeld.rotation.y = Math.PI / 2;
+        hpWeld.position.x = bodyHalf;
+        group.add(hpWeld);
+      })();
 
       // --- SAMPLES of the other 2 element types displayed alongside ---
       // BRUSHED square tube (left) — visual sample (labels: 60×60 mm real)
