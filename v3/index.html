@@ -320,7 +320,7 @@
 <header class="page-header">
   <span class="ph-mark">◆ IDENT · 00-003 · V3</span>
   <span class="ph-name">NAZOV SPOLOCNOSTI</span>
-  <span class="ph-meta">BUILD v2026.04.16-r6 · INTERACTIVE</span>
+  <span class="ph-meta">BUILD v2026.04.16-r7 · INTERACTIVE</span>
 </header>
 
 <!-- ===================== BLUEPRINT ===================== -->
@@ -484,7 +484,7 @@
   <span>© 2026 NAZOV SPOLOCNOSTI · s.r.o.</span>
   <span>IČO 00 000 000 · DIČ 20 000 000 00</span>
   <span>info@nazovspolocnosti.sk · +421 000 000 000</span>
-  <span style="opacity:.6">BUILD v2026.04.16-r6</span>
+  <span style="opacity:.6">BUILD v2026.04.16-r7</span>
 </footer>
 
 <!-- ===================== 3D VIEWER ===================== -->
@@ -579,7 +579,7 @@
     camera.lookAt(orbit.target);
   }
 
-  var W = 6.4, H = 2.8, TS = 0.56, PR = 0.085, N_PICKETS = 13;  // TS = 60×60 mm real
+  var W = 6.4, H = 2.8, TS = 0.28, PR = 0.085, N_PICKETS = 13;  // labels: 60×60 mm
 
   function initThree() {
     if (typeof THREE === 'undefined') {
@@ -692,24 +692,25 @@
         id: 'F04', label: 'BOČNICA PRAVÁ', dims: '60 × 60 × 1740 mm', meta: 'RÁM · VERTIKÁLNA',
       });
 
+      // Each corner has two short cylindrical plugs that slide into adjacent
+      // frame tubes — one horizontal (±X toward rail) + one vertical (±Y).
       var corners = [
-        { x: -vertCenterX, y:  railCenterY, name: 'ROH · ĽAVÝ HORNÝ',  rotZ: 0 },
-        { x:  vertCenterX, y:  railCenterY, name: 'ROH · PRAVÝ HORNÝ', rotZ: 0 },
-        { x: -vertCenterX, y: -railCenterY, name: 'ROH · ĽAVÝ SPODNÝ', rotZ: Math.PI },
-        { x:  vertCenterX, y: -railCenterY, name: 'ROH · PRAVÝ SPODNÝ',rotZ: Math.PI },
+        { x: -vertCenterX, y:  railCenterY, name: 'ROH · ĽAVÝ HORNÝ',   xSign:  1, ySign: -1 },
+        { x:  vertCenterX, y:  railCenterY, name: 'ROH · PRAVÝ HORNÝ',  xSign: -1, ySign: -1 },
+        { x: -vertCenterX, y: -railCenterY, name: 'ROH · ĽAVÝ SPODNÝ',  xSign:  1, ySign:  1 },
+        { x:  vertCenterX, y: -railCenterY, name: 'ROH · PRAVÝ SPODNÝ', xSign: -1, ySign:  1 },
       ];
       corners.forEach(function (c, i) {
-        var mesh = transitionPiece(transMat);
-        mesh.rotation.z = c.rotZ;
+        var mesh = transitionPiece(transMat, c.xSign, c.ySign);
         var ang = (i / 4) * Math.PI * 2 + 0.2;
         addPart({
           mesh: mesh,
           target: new THREE.Vector3(c.x, c.y, 0),
-          targetRot: new THREE.Euler(0, 0, c.rotZ),
+          targetRot: new THREE.Euler(0, 0, 0),
           start: new THREE.Vector3(Math.cos(ang) * 14, Math.sin(ang) * 6, Math.sin(ang) * 14),
           startRot: new THREE.Euler(Math.random() * 2, Math.random() * 2, Math.random() * 2),
           delay: 1.6 + i * 0.1, duration: 1.1, kind: 'trans',
-          id: 'T0' + (i + 1), label: c.name, dims: '⬜30 → ⌀60', meta: 'PRECHODOVÝ KUS',
+          id: 'T0' + (i + 1), label: c.name, dims: '⬜60 + 2× ⌀50 × 28 mm', meta: 'PRECHODOVÝ KUS · 2 výstupy',
         });
       });
 
@@ -793,34 +794,54 @@
     return cyl;
   }
 
-  function transitionPiece(mat) {
-    // Detailed V1-style corner: upper block + lower connector + protruding pipe + weld
+  function transitionPiece(mat, xSign, ySign) {
+    // Corner joint: cubic body + two short perpendicular cylindrical plugs
+    // that slot INTO the ends of the adjacent square frame tubes.
+    xSign = (xSign === -1) ? -1 : 1;
+    ySign = (ySign === -1) ? -1 : 1;
+
     var g = new THREE.Group();
     var s = TS;
     var innerVoid = new THREE.MeshStandardMaterial({ color: 0x1a1a1e, metalness: 0.4, roughness: 0.9, side: THREE.DoubleSide });
     var weldMat = new THREE.MeshStandardMaterial({ color: 0x8f7c60, metalness: 0.4, roughness: 0.65 });
 
-    var upper = new THREE.Mesh(new THREE.BoxGeometry(s * 1.0, s * 1.3, s * 1.0), mat.clone());
-    upper.position.y = s * 0.75;
-    upper.castShadow = true; upper.receiveShadow = true;
-    g.add(upper);
-    var lower = new THREE.Mesh(new THREE.BoxGeometry(s * 1.3, s * 0.55, s * 1.3), mat.clone());
-    lower.position.y = -s * 0.2;
-    lower.castShadow = true; lower.receiveShadow = true;
-    g.add(lower);
-    var pipe = new THREE.Mesh(new THREE.CylinderGeometry(s * 0.55, s * 0.55, s * 1.1, 20, 1, true), mat.clone());
-    pipe.rotation.x = Math.PI / 2;
-    pipe.position.set(0, -s * 0.2, s * 1.0);
-    pipe.castShadow = true; pipe.receiveShadow = true;
-    g.add(pipe);
-    var inner = new THREE.Mesh(new THREE.CylinderGeometry(s * 0.42, s * 0.42, s * 1.12, 20, 1, true), innerVoid);
-    inner.rotation.x = Math.PI / 2;
-    inner.position.set(0, -s * 0.2, s * 1.0);
-    g.add(inner);
-    var weld = new THREE.Mesh(new THREE.TorusGeometry(s * 0.55, s * 0.045, 8, 20), weldMat);
-    weld.rotation.x = Math.PI / 2;
-    weld.position.set(0, -s * 0.2, s * 0.52);
-    g.add(weld);
+    var body = new THREE.Mesh(new THREE.BoxGeometry(s * 1.05, s * 1.05, s * 1.05), mat.clone());
+    body.castShadow = true; body.receiveShadow = true;
+    g.add(body);
+
+    var plugLen = s * 0.55;
+    var plugR = s * 0.42;
+    var bodyHalf = s * 0.525;
+    var plugOffset = bodyHalf + plugLen * 0.5;
+
+    // Horizontal plug (±X → into rail tube end)
+    var hp = new THREE.Mesh(new THREE.CylinderGeometry(plugR, plugR, plugLen, 20, 1, true), mat.clone());
+    hp.rotation.z = Math.PI / 2;
+    hp.position.x = xSign * plugOffset;
+    hp.castShadow = true; hp.receiveShadow = true;
+    g.add(hp);
+    var hpInner = new THREE.Mesh(new THREE.CylinderGeometry(plugR * 0.8, plugR * 0.8, plugLen + 0.005, 20, 1, true), innerVoid);
+    hpInner.rotation.z = Math.PI / 2;
+    hpInner.position.x = xSign * plugOffset;
+    g.add(hpInner);
+    var hpWeld = new THREE.Mesh(new THREE.TorusGeometry(plugR, s * 0.035, 8, 20), weldMat);
+    hpWeld.rotation.y = Math.PI / 2;
+    hpWeld.position.x = xSign * bodyHalf;
+    g.add(hpWeld);
+
+    // Vertical plug (±Y → into vertical frame tube end)
+    var vp = new THREE.Mesh(new THREE.CylinderGeometry(plugR, plugR, plugLen, 20, 1, true), mat.clone());
+    vp.position.y = ySign * plugOffset;
+    vp.castShadow = true; vp.receiveShadow = true;
+    g.add(vp);
+    var vpInner = new THREE.Mesh(new THREE.CylinderGeometry(plugR * 0.8, plugR * 0.8, plugLen + 0.005, 20, 1, true), innerVoid);
+    vpInner.position.y = ySign * plugOffset;
+    g.add(vpInner);
+    var vpWeld = new THREE.Mesh(new THREE.TorusGeometry(plugR, s * 0.035, 8, 20), weldMat);
+    vpWeld.rotation.x = Math.PI / 2;
+    vpWeld.position.y = ySign * bodyHalf;
+    g.add(vpWeld);
+
     return g;
   }
 
