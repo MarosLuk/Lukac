@@ -238,7 +238,7 @@
 <header class="page-header">
   <span class="ph-mark">◆ IDENT · 00-000 · V1</span>
   <span class="ph-name">NAZOV SPOLOCNOSTI</span>
-  <span class="ph-meta">BUILD v2026.04.16-r2 · STR. 1/1</span>
+  <span class="ph-meta">BUILD v2026.04.16-r3 · STR. 1/1</span>
 </header>
 
 <!-- ===================== BLUEPRINT ===================== -->
@@ -372,7 +372,7 @@
   <span>© 2026 NAZOV SPOLOCNOSTI · s.r.o.</span>
   <span>IČO 00 000 000 · DIČ 20 000 000 00</span>
   <span>info@nazovspolocnosti.sk · +421 000 000 000</span>
-  <span style="opacity:.6">BUILD v2026.04.16-r2</span>
+  <span style="opacity:.6">BUILD v2026.04.16-r3</span>
 </footer>
 
 <!-- ===================== 3D VIEWER ===================== -->
@@ -449,32 +449,32 @@
       floor.receiveShadow = true;
       scene.add(floor);
 
-      // ---- BRIGHT env map so stainless reads as real metal, not dark grey ----
+      // ---- Realistic shop-lit env map (medium grey, not too bright) ----
       (function () {
         var pmrem = new THREE.PMREMGenerator(renderer);
         var envScene = new THREE.Scene();
-        envScene.background = new THREE.Color(0xd0dae6);
-        var top    = new THREE.Mesh(new THREE.SphereGeometry(80, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffffff })); top.position.y = 40; envScene.add(top);
-        var side1  = new THREE.Mesh(new THREE.SphereGeometry(30), new THREE.MeshBasicMaterial({ color: 0xf2f6ff })); side1.position.set(35, 10, 20); envScene.add(side1);
-        var side2  = new THREE.Mesh(new THREE.SphereGeometry(30), new THREE.MeshBasicMaterial({ color: 0xe8eef8 })); side2.position.set(-35, 10, -20); envScene.add(side2);
-        var bottom = new THREE.Mesh(new THREE.SphereGeometry(60), new THREE.MeshBasicMaterial({ color: 0x8a96a8 })); bottom.position.y = -30; envScene.add(bottom);
+        envScene.background = new THREE.Color(0x6a7380);
+        var top    = new THREE.Mesh(new THREE.SphereGeometry(80, 16, 16), new THREE.MeshBasicMaterial({ color: 0xb8c2ce })); top.position.y = 40; envScene.add(top);
+        var side1  = new THREE.Mesh(new THREE.SphereGeometry(28), new THREE.MeshBasicMaterial({ color: 0x9ca6b4 })); side1.position.set(35, 10, 20); envScene.add(side1);
+        var side2  = new THREE.Mesh(new THREE.SphereGeometry(28), new THREE.MeshBasicMaterial({ color: 0x8894a4 })); side2.position.set(-35, 10, -20); envScene.add(side2);
+        var bottom = new THREE.Mesh(new THREE.SphereGeometry(60), new THREE.MeshBasicMaterial({ color: 0x2f3540 })); bottom.position.y = -30; envScene.add(bottom);
         scene.environment = pmrem.fromScene(envScene, 0.08).texture;
         pmrem.dispose();
       })();
 
-      // Boost all scene lights so brushed stainless reads bright too
-      hemi.intensity = 1.0;
-      key.intensity = 1.6;
-      fill.intensity = 0.8;
-      rim.intensity = 0.55;
+      // Mild light boost — not cranked to max so brushed shows shadow tone
+      hemi.intensity = 0.8;
+      key.intensity = 1.25;
+      fill.intensity = 0.55;
+      rim.intensity = 0.4;
 
-      // BRUSHED stainless — boxes (body / housing) · bright matte
+      // BRUSHED stainless — boxes (body / housing) · medium grey with shop scatter
       var brushed = new THREE.MeshStandardMaterial({
-        color: 0xe4e8ed, metalness: 0.82, roughness: 0.42, envMapIntensity: 1.6
+        color: 0xb0b6be, metalness: 0.86, roughness: 0.48, envMapIntensity: 1.0
       });
-      // POLISHED stainless — round pipes · mirror
+      // POLISHED stainless — round pipes · mirror reflections (brightness comes from env)
       var polished = new THREE.MeshStandardMaterial({
-        color: 0xf4f7fa, metalness: 0.98, roughness: 0.06, envMapIntensity: 2.2
+        color: 0xcdd3db, metalness: 0.97, roughness: 0.08, envMapIntensity: 1.45
       });
       var steel = brushed;
       var innerMat = new THREE.MeshStandardMaterial({
