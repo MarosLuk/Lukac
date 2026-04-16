@@ -268,7 +268,7 @@
 <header class="page-header">
   <span class="ph-mark">◆ IDENT · 00-002 · V2</span>
   <span class="ph-name">NAZOV SPOLOCNOSTI</span>
-  <span class="ph-meta">BUILD v2026.04.16-r6 · ASSEMBLY</span>
+  <span class="ph-meta">BUILD v2026.04.16-r7 · ASSEMBLY</span>
 </header>
 
 <!-- ===================== BLUEPRINT ===================== -->
@@ -456,7 +456,7 @@
   <span>© 2026 NAZOV SPOLOCNOSTI · s.r.o.</span>
   <span>IČO 00 000 000 · DIČ 20 000 000 00</span>
   <span>info@nazovspolocnosti.sk · +421 000 000 000</span>
-  <span style="opacity:.6">BUILD v2026.04.16-r6</span>
+  <span style="opacity:.6">BUILD v2026.04.16-r7</span>
 </footer>
 
 <!-- ===================== 3D VIEWER ===================== -->
@@ -513,7 +513,7 @@
   // ---------- GATE DIMENSIONS ----------
   var W = 6.4;          // gate width
   var H = 2.8;          // gate height
-  var TS = 0.56;        // square tube cross-section (60×60 mm real)
+  var TS = 0.28;        // visual scale kept (labels: 60×60 mm real)
   var PR = 0.085;       // picket radius (⌀20 mm real)
   var N_PICKETS = 13;
 
@@ -657,22 +657,25 @@
       });
 
       // 5. Transition pieces (4 corners)
+      // Each corner has cylinders pointing INTO the adjacent frame tubes:
+      //   xSign = +1 → cylinder toward +X (inside frame from LEFT corner)
+      //   xSign = -1 → cylinder toward -X (from RIGHT corner)
+      //   ySign = +1 → cylinder toward +Y (from BOTTOM corner, up into vertical)
+      //   ySign = -1 → cylinder toward -Y (from TOP corner, down into vertical)
       var corners = [
-        { x: -vertCenterX, y: railCenterY },
-        { x:  vertCenterX, y: railCenterY },
-        { x: -vertCenterX, y: -railCenterY },
-        { x:  vertCenterX, y: -railCenterY },
+        { x: -vertCenterX, y:  railCenterY, xSign:  1, ySign: -1 }, // top-left
+        { x:  vertCenterX, y:  railCenterY, xSign: -1, ySign: -1 }, // top-right
+        { x: -vertCenterX, y: -railCenterY, xSign:  1, ySign:  1 }, // bottom-left
+        { x:  vertCenterX, y: -railCenterY, xSign: -1, ySign:  1 }, // bottom-right
       ];
       corners.forEach(function (c, i) {
-        var mesh = transitionPiece(transMat);
-        // orient protrusion outward (±Z)
-        mesh.rotation.z = (i < 2) ? 0 : Math.PI; // flip top vs bottom
+        var mesh = transitionPiece(transMat, c.xSign, c.ySign);
         var startRad = 14;
         var ang = (i / 4) * Math.PI * 2 + 0.2;
         addPart({
           mesh: mesh,
           target: new THREE.Vector3(c.x, c.y, 0),
-          targetRot: new THREE.Vector3(mesh.rotation.x, mesh.rotation.y, mesh.rotation.z),
+          targetRot: new THREE.Vector3(0, 0, 0),
           start: new THREE.Vector3(Math.cos(ang) * startRad, Math.sin(ang) * 6, Math.sin(ang) * startRad),
           startRot: new THREE.Vector3(Math.random() * 2, Math.random() * 2, Math.random() * 2),
           delay: 1.6 + i * 0.1, duration: 1.1,
@@ -772,9 +775,15 @@
     return cyl;
   }
 
-  function transitionPiece(mat) {
-    // Detailed V1-style corner: tall upper block + lower connector +
-    // protruding horizontal round pipe with weld seam
+  function transitionPiece(mat, xSign, ySign) {
+    // Corner joint: cubic body with two short perpendicular round protrusions
+    //   xSign ∈ {+1, -1} — protrusion along ±X (into horizontal rail tube)
+    //   ySign ∈ {+1, -1} — protrusion along ±Y (into vertical frame tube)
+    // Protrusion diameter is slightly smaller than the square tube ID so it
+    // slides INTO the end of the frame tube for mechanical jointing.
+    xSign = (xSign === -1) ? -1 : 1;
+    ySign = (ySign === -1) ? -1 : 1;
+
     var g = new THREE.Group();
     var s = TS;
     var innerVoid = new THREE.MeshStandardMaterial({
@@ -784,41 +793,62 @@
       color: 0x8f7c60, metalness: 0.4, roughness: 0.65
     });
 
-    // upper block (matches square tube cross-section, taller)
-    var upper = new THREE.Mesh(new THREE.BoxGeometry(s * 1.0, s * 1.3, s * 1.0), mat.clone());
-    upper.position.y = s * 0.75;
-    upper.castShadow = true; upper.receiveShadow = true;
-    g.add(upper);
-    // lower connector block (slightly wider, provides pipe attachment)
-    var lower = new THREE.Mesh(new THREE.BoxGeometry(s * 1.3, s * 0.55, s * 1.3), mat.clone());
-    lower.position.y = -s * 0.2;
-    lower.castShadow = true; lower.receiveShadow = true;
-    g.add(lower);
-    // horizontal round pipe protruding forward (+Z)
-    var pipe = new THREE.Mesh(
-      new THREE.CylinderGeometry(s * 0.55, s * 0.55, s * 1.1, 20, 1, true),
+    // Cubic body matching square tube cross-section
+    var body = new THREE.Mesh(new THREE.BoxGeometry(s * 1.05, s * 1.05, s * 1.05), mat.clone());
+    body.castShadow = true; body.receiveShadow = true;
+    g.add(body);
+
+    // Short protrusion length (half of what it was before)
+    var plugLen = s * 0.55;      // stub length inserted into tube end
+    var plugR   = s * 0.42;      // fits inside 60 mm square with play
+    var bodyHalf = s * 0.525;    // half of body size
+    var plugOffset = bodyHalf + plugLen * 0.5;
+
+    // Horizontal plug (into rail tube along ±X)
+    var hp = new THREE.Mesh(
+      new THREE.CylinderGeometry(plugR, plugR, plugLen, 20, 1, true),
       mat.clone()
     );
-    pipe.rotation.x = Math.PI / 2;
-    pipe.position.set(0, -s * 0.2, s * 1.0);
-    pipe.castShadow = true; pipe.receiveShadow = true;
-    g.add(pipe);
-    // inner dark void inside the pipe
-    var inner = new THREE.Mesh(
-      new THREE.CylinderGeometry(s * 0.42, s * 0.42, s * 1.12, 20, 1, true),
+    hp.rotation.z = Math.PI / 2;
+    hp.position.x = xSign * plugOffset;
+    hp.castShadow = true; hp.receiveShadow = true;
+    g.add(hp);
+    // Inner void of horizontal plug
+    var hpInner = new THREE.Mesh(
+      new THREE.CylinderGeometry(plugR * 0.8, plugR * 0.8, plugLen + 0.005, 20, 1, true),
       innerVoid
     );
-    inner.rotation.x = Math.PI / 2;
-    inner.position.set(0, -s * 0.2, s * 1.0);
-    g.add(inner);
-    // weld ring at the pipe-block joint
-    var weld = new THREE.Mesh(
-      new THREE.TorusGeometry(s * 0.55, s * 0.045, 8, 20),
-      weldMat
+    hpInner.rotation.z = Math.PI / 2;
+    hpInner.position.x = xSign * plugOffset;
+    g.add(hpInner);
+    // Weld ring at horizontal plug base
+    var hpWeld = new THREE.Mesh(
+      new THREE.TorusGeometry(plugR, s * 0.035, 8, 20), weldMat
     );
-    weld.rotation.x = Math.PI / 2;
-    weld.position.set(0, -s * 0.2, s * 0.52);
-    g.add(weld);
+    hpWeld.rotation.y = Math.PI / 2;
+    hpWeld.position.x = xSign * bodyHalf;
+    g.add(hpWeld);
+
+    // Vertical plug (into frame-vertical tube along ±Y)
+    var vp = new THREE.Mesh(
+      new THREE.CylinderGeometry(plugR, plugR, plugLen, 20, 1, true),
+      mat.clone()
+    );
+    vp.position.y = ySign * plugOffset;
+    vp.castShadow = true; vp.receiveShadow = true;
+    g.add(vp);
+    var vpInner = new THREE.Mesh(
+      new THREE.CylinderGeometry(plugR * 0.8, plugR * 0.8, plugLen + 0.005, 20, 1, true),
+      innerVoid
+    );
+    vpInner.position.y = ySign * plugOffset;
+    g.add(vpInner);
+    var vpWeld = new THREE.Mesh(
+      new THREE.TorusGeometry(plugR, s * 0.035, 8, 20), weldMat
+    );
+    vpWeld.rotation.x = Math.PI / 2;
+    vpWeld.position.y = ySign * bodyHalf;
+    g.add(vpWeld);
 
     return g;
   }
