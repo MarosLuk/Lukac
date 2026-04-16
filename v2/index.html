@@ -266,9 +266,9 @@
 
 <!-- ===================== PAGE HEADER ===================== -->
 <header class="page-header">
-  <span class="ph-mark">◆ IDENT · 00-002</span>
+  <span class="ph-mark">◆ IDENT · 00-002 · V2</span>
   <span class="ph-name">NAZOV SPOLOCNOSTI</span>
-  <span class="ph-meta">V2 · ASSEMBLY · STR. 1 / 1</span>
+  <span class="ph-meta">BUILD v2026.04.16-r2 · ASSEMBLY</span>
 </header>
 
 <!-- ===================== BLUEPRINT ===================== -->
@@ -456,6 +456,7 @@
   <span>© 2026 NAZOV SPOLOCNOSTI · s.r.o.</span>
   <span>IČO 00 000 000 · DIČ 20 000 000 00</span>
   <span>info@nazovspolocnosti.sk · +421 000 000 000</span>
+  <span style="opacity:.6">BUILD v2026.04.16-r2</span>
 </footer>
 
 <!-- ===================== 3D VIEWER ===================== -->
@@ -567,31 +568,34 @@
       floor.receiveShadow = true;
       scene.add(floor);
 
-      // ---- Env map for realistic stainless reflections ----
+      // ---- BRIGHT env map so stainless reads as real metal, not dark grey ----
       (function () {
         var pmrem = new THREE.PMREMGenerator(renderer);
         var envScene = new THREE.Scene();
-        envScene.background = new THREE.Color(0x2a3a52);
-        var top = new THREE.Mesh(new THREE.SphereGeometry(80, 16, 16), new THREE.MeshBasicMaterial({ color: 0xe7f0ff })); top.position.y = 40; envScene.add(top);
-        var side1 = new THREE.Mesh(new THREE.SphereGeometry(20), new THREE.MeshBasicMaterial({ color: 0xbfd4ff })); side1.position.set(30, 10, 20); envScene.add(side1);
-        var side2 = new THREE.Mesh(new THREE.SphereGeometry(20), new THREE.MeshBasicMaterial({ color: 0x9ec5ff })); side2.position.set(-30, 10, -20); envScene.add(side2);
-        var bottom = new THREE.Mesh(new THREE.SphereGeometry(50), new THREE.MeshBasicMaterial({ color: 0x0b1424 })); bottom.position.y = -30; envScene.add(bottom);
-        scene.environment = pmrem.fromScene(envScene, 0.1).texture;
+        envScene.background = new THREE.Color(0xd0dae6);
+        var top    = new THREE.Mesh(new THREE.SphereGeometry(80, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffffff })); top.position.y = 40; envScene.add(top);
+        var side1  = new THREE.Mesh(new THREE.SphereGeometry(30), new THREE.MeshBasicMaterial({ color: 0xf2f6ff })); side1.position.set(35, 10, 20); envScene.add(side1);
+        var side2  = new THREE.Mesh(new THREE.SphereGeometry(30), new THREE.MeshBasicMaterial({ color: 0xe8eef8 })); side2.position.set(-35, 10, -20); envScene.add(side2);
+        var bottom = new THREE.Mesh(new THREE.SphereGeometry(60), new THREE.MeshBasicMaterial({ color: 0x8a96a8 })); bottom.position.y = -30; envScene.add(bottom);
+        scene.environment = pmrem.fromScene(envScene, 0.08).texture;
         pmrem.dispose();
       })();
 
-      // Materials · stainless steel
-      // BRUSHED — square frame tubes, transition pieces (matte finish)
+      // Boost scene lights so brushed reads bright
+      scene.children.forEach(function (c) {
+        if (c.isHemisphereLight) c.intensity = 1.0;
+        else if (c.isDirectionalLight) c.intensity *= 1.4;
+      });
+
+      // Materials · stainless steel (BRIGHT)
       var frameMat = new THREE.MeshStandardMaterial({
-        color: 0xc5cbd3, metalness: 0.88, roughness: 0.58, envMapIntensity: 0.95
+        color: 0xe4e8ed, metalness: 0.82, roughness: 0.42, envMapIntensity: 1.6
       });
-      // POLISHED — round pickets (high-gloss mirror finish)
       var picketMat = new THREE.MeshStandardMaterial({
-        color: 0xeaeef3, metalness: 0.98, roughness: 0.08, envMapIntensity: 1.5
+        color: 0xf4f7fa, metalness: 0.98, roughness: 0.06, envMapIntensity: 2.2
       });
-      // BRUSHED slightly darker — transition pieces (corners)
       var transMat = new THREE.MeshStandardMaterial({
-        color: 0xbcc2ca, metalness: 0.85, roughness: 0.62, envMapIntensity: 0.9
+        color: 0xdce0e6, metalness: 0.82, roughness: 0.48, envMapIntensity: 1.55
       });
       var trackMat = new THREE.MeshStandardMaterial({
         color: 0x6a6f76, metalness: 0.7, roughness: 0.55

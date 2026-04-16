@@ -236,9 +236,9 @@
 
 <!-- ===================== PAGE HEADER ===================== -->
 <header class="page-header">
-  <span class="ph-mark">◆ IDENT · 00-000</span>
+  <span class="ph-mark">◆ IDENT · 00-000 · V1</span>
   <span class="ph-name">NAZOV SPOLOCNOSTI</span>
-  <span class="ph-meta">STR. 1 / 1 · V.2026.04</span>
+  <span class="ph-meta">BUILD v2026.04.16-r2 · STR. 1/1</span>
 </header>
 
 <!-- ===================== BLUEPRINT ===================== -->
@@ -372,6 +372,7 @@
   <span>© 2026 NAZOV SPOLOCNOSTI · s.r.o.</span>
   <span>IČO 00 000 000 · DIČ 20 000 000 00</span>
   <span>info@nazovspolocnosti.sk · +421 000 000 000</span>
+  <span style="opacity:.6">BUILD v2026.04.16-r2</span>
 </footer>
 
 <!-- ===================== 3D VIEWER ===================== -->
@@ -448,34 +449,39 @@
       floor.receiveShadow = true;
       scene.add(floor);
 
-      // ---- Env map for realistic stainless reflections ----
+      // ---- BRIGHT env map so stainless reads as real metal, not dark grey ----
       (function () {
         var pmrem = new THREE.PMREMGenerator(renderer);
         var envScene = new THREE.Scene();
-        envScene.background = new THREE.Color(0x2a3a52);
-        var top = new THREE.Mesh(new THREE.SphereGeometry(80, 16, 16), new THREE.MeshBasicMaterial({ color: 0xe7f0ff })); top.position.y = 40; envScene.add(top);
-        var side1 = new THREE.Mesh(new THREE.SphereGeometry(20), new THREE.MeshBasicMaterial({ color: 0xbfd4ff })); side1.position.set(30, 10, 20); envScene.add(side1);
-        var side2 = new THREE.Mesh(new THREE.SphereGeometry(20), new THREE.MeshBasicMaterial({ color: 0x9ec5ff })); side2.position.set(-30, 10, -20); envScene.add(side2);
-        var bottom = new THREE.Mesh(new THREE.SphereGeometry(50), new THREE.MeshBasicMaterial({ color: 0x0b1424 })); bottom.position.y = -30; envScene.add(bottom);
-        scene.environment = pmrem.fromScene(envScene, 0.1).texture;
+        envScene.background = new THREE.Color(0xd0dae6);
+        var top    = new THREE.Mesh(new THREE.SphereGeometry(80, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffffff })); top.position.y = 40; envScene.add(top);
+        var side1  = new THREE.Mesh(new THREE.SphereGeometry(30), new THREE.MeshBasicMaterial({ color: 0xf2f6ff })); side1.position.set(35, 10, 20); envScene.add(side1);
+        var side2  = new THREE.Mesh(new THREE.SphereGeometry(30), new THREE.MeshBasicMaterial({ color: 0xe8eef8 })); side2.position.set(-35, 10, -20); envScene.add(side2);
+        var bottom = new THREE.Mesh(new THREE.SphereGeometry(60), new THREE.MeshBasicMaterial({ color: 0x8a96a8 })); bottom.position.y = -30; envScene.add(bottom);
+        scene.environment = pmrem.fromScene(envScene, 0.08).texture;
         pmrem.dispose();
       })();
 
-      // Brushed stainless — used for boxes (body / housing)
+      // Boost all scene lights so brushed stainless reads bright too
+      hemi.intensity = 1.0;
+      key.intensity = 1.6;
+      fill.intensity = 0.8;
+      rim.intensity = 0.55;
+
+      // BRUSHED stainless — boxes (body / housing) · bright matte
       var brushed = new THREE.MeshStandardMaterial({
-        color: 0xc5cbd3, metalness: 0.88, roughness: 0.58, envMapIntensity: 0.95
+        color: 0xe4e8ed, metalness: 0.82, roughness: 0.42, envMapIntensity: 1.6
       });
-      // Polished stainless — used for round pipes (high gloss)
+      // POLISHED stainless — round pipes · mirror
       var polished = new THREE.MeshStandardMaterial({
-        color: 0xeaeef3, metalness: 0.98, roughness: 0.08, envMapIntensity: 1.5
+        color: 0xf4f7fa, metalness: 0.98, roughness: 0.06, envMapIntensity: 2.2
       });
-      // Keep `steel` as an alias so existing code keeps working where it refers to a generic steel
       var steel = brushed;
       var innerMat = new THREE.MeshStandardMaterial({
-        color: 0x1c1c22, metalness: 0.5, roughness: 0.9, side: THREE.DoubleSide
+        color: 0x2a2a30, metalness: 0.5, roughness: 0.85, side: THREE.DoubleSide
       });
       var weldMat = new THREE.MeshStandardMaterial({
-        color: 0x7a6a55, metalness: 0.4, roughness: 0.7
+        color: 0x8f7c60, metalness: 0.4, roughness: 0.65
       });
 
       group = new THREE.Group();
