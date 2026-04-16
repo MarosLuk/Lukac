@@ -176,6 +176,11 @@
     stroke: #9ec5ff; stroke-width: 0.8; fill: #9ec5ff;
     opacity: 0; animation: fadeIn 0.8s 1.8s ease forwards;
   }
+  .bp-canvas svg .tag {
+    fill: #cfe1ff; font-size: 9.5px; letter-spacing: 1px;
+    font-family: 'Courier New', monospace; opacity: 0;
+    animation: fadeIn 0.8s 2s ease forwards;
+  }
   @keyframes draw { to { stroke-dashoffset: 0; } }
   @keyframes fadeIn { to { opacity: 1; } }
 
@@ -238,122 +243,108 @@
 <header class="page-header">
   <span class="ph-mark">◆ IDENT · 00-000 · V1</span>
   <span class="ph-name">NAZOV SPOLOCNOSTI</span>
-  <span class="ph-meta">BUILD v2026.04.16-r3 · STR. 1/1</span>
+  <span class="ph-meta">BUILD v2026.04.16-r5 · STR. 1/1</span>
 </header>
 
 <!-- ===================== BLUEPRINT ===================== -->
 <section id="blueprint">
   <div class="bp-frame">
     <div class="bp-header">
-      <div class="bp-title">TECHNICKÝ VÝKRES · PRECHODOVÝ KUS</div>
-      <div class="bp-sub">DWG-001 · NEREZ · M 1:2</div>
+      <div class="bp-title">TECHNICKÝ VÝKRES · KATALÓG DIELOV BRÁNY</div>
+      <div class="bp-sub">DWG-001 · NEREZ AISI 304 · M 1:2</div>
     </div>
 
     <div class="bp-body">
-      <!-- POHĽAD SPREDU -->
+      <!-- RÚRA ŠTVORCOVÁ -->
       <div class="bp-canvas">
         <svg viewBox="0 0 500 400" preserveAspectRatio="xMidYMid meet">
-          <path class="ink thin" d="M 150 20 L 150 260" />
-          <path class="ink thin" d="M 90 320 L 480 320" />
+          <rect class="ink" x="30" y="170" width="340" height="60" />
+          <line class="ink thin" x1="30" y1="184" x2="370" y2="184" />
+          <line class="ink thin" x1="30" y1="216" x2="370" y2="216" />
+          <rect class="ink d2" x="400" y="170" width="70" height="60" />
+          <rect class="ink thin d2" x="404" y="174" width="62" height="52" />
+          <line class="ink thin d2" x1="400" y1="170" x2="404" y2="174" />
+          <line class="ink thin d2" x1="470" y1="170" x2="466" y2="174" />
+          <line class="ink thin d2" x1="400" y1="230" x2="404" y2="226" />
+          <line class="ink thin d2" x1="470" y1="230" x2="466" y2="226" />
 
-          <ellipse class="ink" cx="150" cy="40" rx="45" ry="12" />
-          <path class="ink" d="M 105 40 L 105 140" />
-          <path class="ink" d="M 195 40 L 195 140" />
-          <path class="ink thin" d="M 105 140 Q 150 152 195 140" />
+          <path class="arrow" d="M 30 260 L 370 260" />
+          <path class="arrow" d="M 30 256 L 30 264" />
+          <path class="arrow" d="M 370 256 L 370 264" />
+          <text class="dim" x="165" y="275">3000 mm</text>
 
-          <path class="ink d2" d="M 80 140 L 220 140 L 220 260 L 80 260 Z" />
-          <path class="ink thin" d="M 80 140 L 105 120 L 245 120 L 220 140" />
-          <path class="ink thin" d="M 245 120 L 245 240 L 220 260" />
+          <path class="arrow" d="M 400 260 L 470 260" />
+          <path class="arrow" d="M 400 256 L 400 264" />
+          <path class="arrow" d="M 470 256 L 470 264" />
+          <text class="dim" x="420" y="275">30</text>
 
-          <path class="ink d3" d="M 80 260 L 360 260 L 360 380 L 80 380 Z" />
-          <path class="ink thin" d="M 80 260 L 105 240 L 385 240 L 360 260" />
-          <path class="ink thin" d="M 385 240 L 385 360 L 360 380" />
-
-          <path class="ink d4" d="M 360 280 L 460 280" />
-          <path class="ink d4" d="M 360 360 L 460 360" />
-          <ellipse class="ink d4" cx="460" cy="320" rx="12" ry="40" />
-          <path class="ink thin d4" d="M 360 280 Q 372 320 360 360" />
-
-          <path class="arrow" d="M 60 140 L 60 260" />
-          <path class="arrow" d="M 56 140 L 64 140" />
-          <path class="arrow" d="M 56 260 L 64 260" />
-          <text class="dim" x="30" y="205" transform="rotate(-90 30 205)">120 mm</text>
-
-          <path class="arrow" d="M 80 395 L 360 395" />
-          <path class="arrow" d="M 80 391 L 80 399" />
-          <path class="arrow" d="M 360 391 L 360 399" />
-          <text class="dim" x="200" y="392">280 mm</text>
-
-          <text class="dim" x="115" y="15">⌀ 90</text>
-          <text class="dim" x="420" y="270">⌀ 80</text>
+          <text class="tag" x="30" y="130">■ 30 × 30 × 2 mm · L = 3000</text>
+          <text class="tag" x="30" y="350">RÁM · HORIZONTÁL / VERTIKÁL</text>
+          <text class="tag" x="30" y="370">AISI 304 · BRÚSENÉ</text>
         </svg>
-        <div class="bp-canvas-label">POHĽAD SPREDU</div>
+        <div class="bp-canvas-label">RÚRA ŠTVORCOVÁ 30×30</div>
       </div>
 
-      <!-- POHĽAD ZHORA -->
+      <!-- RÚRA KRUHOVÁ -->
       <div class="bp-canvas">
         <svg viewBox="0 0 500 400" preserveAspectRatio="xMidYMid meet">
-          <circle class="ink" cx="150" cy="150" r="45" />
-          <circle class="ink thin" cx="150" cy="150" r="38" />
+          <path class="ink" d="M 60 180 L 380 180 Q 390 180 390 200 Q 390 220 380 220 L 60 220 Q 50 220 50 200 Q 50 180 60 180 Z" />
+          <line class="ink thin" x1="60" y1="200" x2="380" y2="200" />
+          <line class="ink thin" x1="50" y1="200" x2="390" y2="200" />
 
-          <path class="ink d2" d="M 80 80 L 220 80 L 220 220 L 80 220 Z" />
-          <path class="ink d3" d="M 220 100 L 380 100 L 380 200 L 220 200" />
+          <circle class="ink d2" cx="440" cy="200" r="34" />
+          <circle class="ink thin d2" cx="440" cy="200" r="28" />
+          <line class="ink thin d2" x1="400" y1="200" x2="480" y2="200" />
+          <line class="ink thin d2" x1="440" y1="160" x2="440" y2="240" />
 
-          <path class="ink d4" d="M 380 100 L 460 100" />
-          <path class="ink d4" d="M 380 200 L 460 200" />
-          <circle class="ink d4" cx="460" cy="150" r="50" />
-          <circle class="ink thin d4" cx="460" cy="150" r="42" />
+          <path class="arrow" d="M 50 260 L 390 260" />
+          <path class="arrow" d="M 50 256 L 50 264" />
+          <path class="arrow" d="M 390 256 L 390 264" />
+          <text class="dim" x="190" y="275">1800 mm</text>
 
-          <path class="ink thin" d="M 30 150 L 490 150" />
-          <path class="ink thin" d="M 150 30 L 150 240" />
+          <path class="arrow" d="M 406 260 L 474 260" />
+          <path class="arrow" d="M 406 256 L 406 264" />
+          <path class="arrow" d="M 474 256 L 474 264" />
+          <text class="dim" x="428" y="275">⌀ 20</text>
 
-          <path class="arrow" d="M 80 50 L 380 50" />
-          <path class="arrow" d="M 80 46 L 80 54" />
-          <path class="arrow" d="M 380 46 L 380 54" />
-          <text class="dim" x="190" y="45">CELKOM 300 mm</text>
-
-          <text class="dim" x="115" y="155">⌀ 90</text>
-          <text class="dim" x="430" y="155">⌀ 80</text>
+          <text class="tag" x="30" y="130">● ⌀ 20 × 1.5 mm · L = 1800</text>
+          <text class="tag" x="30" y="350">VÝPLŇ · PICKETY</text>
+          <text class="tag" x="30" y="370">AISI 304 · LEŠTENÉ</text>
         </svg>
-        <div class="bp-canvas-label">POHĽAD ZHORA</div>
+        <div class="bp-canvas-label">RÚRA KRUHOVÁ ⌀20</div>
       </div>
 
-      <!-- POHĽAD ZBOKU -->
+      <!-- PRECHODOVÝ KUS -->
       <div class="bp-canvas">
         <svg viewBox="0 0 500 400" preserveAspectRatio="xMidYMid meet">
-          <path class="ink thin" d="M 150 20 L 150 380" />
-          <path class="ink thin" d="M 40 320 L 480 320" />
+          <path class="ink" d="M 100 60 L 220 60 L 220 200 L 100 200 Z" />
+          <path class="ink thin" d="M 100 60 L 115 50 L 235 50 L 220 60" />
+          <path class="ink thin" d="M 235 50 L 235 190 L 220 200" />
+          <path class="ink d2" d="M 90 200 L 230 200 L 230 260 L 90 260 Z" />
+          <path class="ink thin d2" d="M 90 200 L 115 180 L 245 180 L 230 200" />
+          <path class="ink thin d2" d="M 245 180 L 245 240 L 230 260" />
+          <ellipse class="ink d3" cx="160" cy="320" rx="50" ry="16" />
+          <path class="ink d3" d="M 110 320 L 110 380" />
+          <path class="ink d3" d="M 210 320 L 210 380" />
+          <path class="ink thin d3" d="M 110 380 Q 160 396 210 380" />
+          <rect class="ink d4" x="320" y="80" width="100" height="100" />
+          <rect class="ink thin d4" x="330" y="90" width="80" height="80" />
+          <circle class="ink d4" cx="370" cy="280" r="52" />
+          <circle class="ink thin d4" cx="370" cy="280" r="44" />
+          <line class="ink thin d4" x1="370" y1="180" x2="370" y2="228" />
 
-          <ellipse class="ink" cx="150" cy="40" rx="45" ry="12" />
-          <path class="ink" d="M 105 40 L 105 140" />
-          <path class="ink" d="M 195 40 L 195 140" />
-          <path class="ink thin" d="M 105 140 Q 150 152 195 140" />
+          <text class="dim" x="130" y="45">⬜ 30</text>
+          <text class="dim" x="130" y="340">⌀ 60</text>
 
-          <path class="ink d2" d="M 80 140 L 220 140 L 220 260 L 80 260 Z" />
-          <path class="ink thin" d="M 80 140 L 105 120 L 245 120 L 220 140" />
-          <path class="ink thin" d="M 245 120 L 245 240 L 220 260" />
+          <path class="arrow" d="M 70 60 L 70 380" />
+          <path class="arrow" d="M 66 60 L 74 60" />
+          <path class="arrow" d="M 66 380 L 74 380" />
+          <text class="dim" x="55" y="220" transform="rotate(-90 55 220)">140 mm</text>
 
-          <path class="ink d3" d="M 80 260 L 220 260 L 220 380 L 80 380 Z" />
-          <path class="ink thin" d="M 80 260 L 105 240 L 245 240 L 220 260" />
-          <path class="ink thin" d="M 245 240 L 245 360 L 220 380" />
-
-          <circle class="ink d4" cx="150" cy="320" r="40" />
-          <circle class="ink thin d4" cx="150" cy="320" r="32" />
-
-          <path class="arrow" d="M 60 140 L 60 380" />
-          <path class="arrow" d="M 56 140 L 64 140" />
-          <path class="arrow" d="M 56 380 L 64 380" />
-          <text class="dim" x="30" y="265" transform="rotate(-90 30 265)">240 mm</text>
-
-          <path class="arrow" d="M 80 395 L 220 395" />
-          <path class="arrow" d="M 80 391 L 80 399" />
-          <path class="arrow" d="M 220 391 L 220 399" />
-          <text class="dim" x="125" y="392">140 mm</text>
-
-          <text class="dim" x="115" y="15">⌀ 90</text>
-          <text class="dim" x="195" y="325">⌀ 80</text>
+          <text class="tag" x="320" y="65">POHĽAD ZHORA</text>
+          <text class="tag" x="30" y="360">KONVERZIA · 30 → ⌀60</text>
         </svg>
-        <div class="bp-canvas-label">POHĽAD ZBOKU</div>
+        <div class="bp-canvas-label">PRECHODOVÝ KUS</div>
       </div>
     </div>
 
@@ -372,7 +363,7 @@
   <span>© 2026 NAZOV SPOLOCNOSTI · s.r.o.</span>
   <span>IČO 00 000 000 · DIČ 20 000 000 00</span>
   <span>info@nazovspolocnosti.sk · +421 000 000 000</span>
-  <span style="opacity:.6">BUILD v2026.04.16-r3</span>
+  <span style="opacity:.6">BUILD v2026.04.16-r5</span>
 </footer>
 
 <!-- ===================== 3D VIEWER ===================== -->
@@ -550,6 +541,48 @@
       weld2.position.set(1.62, -1.1, 0);
       group.add(weld2);
 
+      // --- SAMPLES of the other 2 element types displayed alongside ---
+      // BRUSHED square tube (left) — 3 length, 0.5 × 0.5 cross-section
+      var sqSample = new THREE.Mesh(
+        new THREE.BoxGeometry(3, 0.5, 0.5),
+        brushed.clone()
+      );
+      sqSample.position.set(-6, 0, 0);
+      sqSample.castShadow = true; sqSample.receiveShadow = true;
+      var sqEdges = new THREE.LineSegments(
+        new THREE.EdgesGeometry(sqSample.geometry),
+        new THREE.LineBasicMaterial({ color: 0xe6ebf2, transparent: true, opacity: 0.4 })
+      );
+      sqSample.add(sqEdges);
+      group.add(sqSample);
+
+      // POLISHED round pipe (right) — 3 length, r=0.35
+      var rdSample = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.35, 0.35, 3, 28, 1),
+        polished.clone()
+      );
+      rdSample.rotation.z = Math.PI / 2; // lay horizontal along X
+      rdSample.position.set(6, 0, 0);
+      rdSample.castShadow = true; rdSample.receiveShadow = true;
+      // Inner dark void for hollow look
+      var rdInner = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.27, 0.27, 3.02, 24, 1, true),
+        innerMat.clone()
+      );
+      rdSample.add(rdInner);
+      group.add(rdSample);
+
+      // Small labels embedded in scene via thin line markers (decoration only)
+      var markerMat = new THREE.LineBasicMaterial({ color: 0x9ec5ff, transparent: true, opacity: 0.4 });
+      function tickMarker(x, y) {
+        var pts = [new THREE.Vector3(x, y - 0.15, 0), new THREE.Vector3(x, y - 1.8, 0)];
+        var geo = new THREE.BufferGeometry().setFromPoints(pts);
+        group.add(new THREE.Line(geo, markerMat));
+      }
+      tickMarker(-6, -0.25);
+      tickMarker(0, -2);
+      tickMarker(6, -0.35);
+
       var bbox = new THREE.Box3().setFromObject(group);
       var center = new THREE.Vector3();
       bbox.getCenter(center);
@@ -573,9 +606,12 @@
   function fitCameraToScreen() {
     var aspect = window.innerWidth / window.innerHeight;
     if (aspect < 1) {
-      camera.position.set(7, 4.5, 9.5);
+      // portrait — widened for 3 parts in row
+      camera.position.set(0, 5, 22);
+      camera.fov = 50;
     } else {
-      camera.position.set(6, 4, 8);
+      camera.position.set(2, 4, 18);
+      camera.fov = 45;
     }
     camera.lookAt(0, 0, 0);
     camera.updateProjectionMatrix();
