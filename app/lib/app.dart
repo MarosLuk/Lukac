@@ -1,26 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'screens/home_screen.dart';
-import 'state/app_state.dart';
+import 'state/providers.dart';
+import 'theme.dart';
 
-class TimeRewardsApp extends StatelessWidget {
-  const TimeRewardsApp({super.key, required this.state});
-
-  final AppState state;
+class TimeRewardsApp extends ConsumerWidget {
+  const TimeRewardsApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return AppStateScope(
-      state: state,
-      child: MaterialApp(
-        title: 'Time Rewards',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-          useMaterial3: true,
-        ),
-        home: const HomeScreen(),
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Bootstrap the side-effect provider that keeps the native shield in sync
+    // with ledger + blocked-apps changes. Watching at the app root keeps it
+    // alive for the lifetime of the ProviderScope.
+    ref.watch(shieldSyncProvider);
+
+    return MaterialApp(
+      title: 'Time Rewards',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.system,
+      home: const HomeScreen(),
     );
   }
 }

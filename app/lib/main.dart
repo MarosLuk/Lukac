@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
-import 'state/app_state.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final state = AppState();
-  await state.load();
-  runApp(TimeRewardsApp(state: state));
+  runApp(const ProviderScope(child: TimeRewardsApp()));
 }
