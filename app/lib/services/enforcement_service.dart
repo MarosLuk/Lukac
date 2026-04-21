@@ -95,6 +95,24 @@ class EnforcementService {
   Future<void> setAllowList({required List<String> packages}) async {
     await _channel.invokeMethod('setAllowList', {'packages': packages});
   }
+
+  /// Whether the OS-level "notification access" / listener permission is
+  /// currently granted. Android checks the enabled notification listeners
+  /// list; iOS always returns `false` because no public API can grant or
+  /// query per-app notification suppression.
+  Future<bool> hasNotificationAccess() async {
+    final result = await _channel.invokeMethod<bool>('hasNotificationAccess');
+    return result ?? false;
+  }
+
+  /// Opens the OS settings page where the user can grant notification
+  /// access (Android) or configure a Focus mode (iOS). Returns `true` if
+  /// the intent/URL was dispatched.
+  Future<bool> requestNotificationAccess() async {
+    final result =
+        await _channel.invokeMethod<bool>('requestNotificationAccess');
+    return result ?? false;
+  }
 }
 
 class InstalledApp {

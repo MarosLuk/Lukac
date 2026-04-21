@@ -22,6 +22,8 @@ class SettingsScreen extends ConsumerWidget {
             children: [
               _PermissionsRow(granted: granted, loading: permissionsAsync.isLoading),
               const Divider(height: 1),
+              const _NotificationAccessRow(),
+              const Divider(height: 1),
               const _AboutRow(),
             ],
           ),
@@ -89,6 +91,51 @@ class _PermissionsRow extends StatelessWidget {
         style: theme.textTheme.bodySmall?.copyWith(
           color: cs.onSurfaceVariant,
         ),
+      ),
+    );
+  }
+}
+
+class _NotificationAccessRow extends ConsumerWidget {
+  const _NotificationAccessRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final grantedAsync = ref.watch(notificationAccessProvider);
+    final granted = grantedAsync.valueOrNull ?? false;
+
+    final label = Platform.isIOS ? 'Focus mode' : 'Notification access';
+    final subtitle = Platform.isIOS
+        ? 'To suppress notifications from shielded apps, enable a Focus '
+            'mode that hides their badges.'
+        : 'Lets the app hide notifications from shielded apps while the '
+            'shield is active.';
+
+    return ListTile(
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      leading: Icon(
+        granted
+            ? Icons.notifications_off
+            : Icons.notifications_off_outlined,
+        color: granted ? cs.primary : cs.onSurfaceVariant,
+      ),
+      title: Text(label, style: theme.textTheme.bodyLarge),
+      subtitle: Text(
+        subtitle,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: cs.onSurfaceVariant,
+        ),
+      ),
+      trailing: TextButton(
+        onPressed: () async {
+          final enforcement = ref.read(enforcementServiceProvider);
+          await enforcement.requestNotificationAccess();
+          ref.invalidate(notificationAccessProvider);
+        },
+        child: const Text('Open Settings'),
       ),
     );
   }

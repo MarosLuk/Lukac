@@ -352,6 +352,18 @@ final permissionStatusProvider = FutureProvider<bool>((ref) async {
   }
 });
 
+/// Whether the OS-level notification-listener access is granted. On iOS
+/// this is always `false` — see [EnforcementService.hasNotificationAccess].
+/// Callers should `ref.invalidate` this provider after returning from the
+/// Settings screen to re-check.
+final notificationAccessProvider = FutureProvider<bool>((ref) async {
+  try {
+    return await ref.read(enforcementServiceProvider).hasNotificationAccess();
+  } catch (_) {
+    return false;
+  }
+});
+
 final installedAppsProvider = FutureProvider<List<InstalledApp>>((ref) async {
   if (!Platform.isAndroid) return const [];
   return ref.read(enforcementServiceProvider).listInstalledApps();

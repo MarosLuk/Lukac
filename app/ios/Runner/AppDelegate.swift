@@ -62,6 +62,18 @@ import Flutter
                 // we accept the call so the Flutter layer stays platform
                 // agnostic.
                 result(nil)
+            case "hasNotificationAccess":
+                // Public APIs can't intercept per-app notifications on iOS.
+                // The equivalent best-effort is a Focus mode, which we can
+                // only suggest — not query — so always report false.
+                result(false)
+            case "requestNotificationAccess":
+                // Best-effort: deep-link to the app's Settings page so the
+                // user can configure a Focus that hides shielded apps.
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                }
+                result(true)
             default:
                 result(FlutterMethodNotImplemented)
             }

@@ -57,6 +57,15 @@ class MainActivity : FlutterActivity() {
                     AppBlockerService.updateAllowList(this, allowed)
                     result.success(null)
                 }
+                "hasNotificationAccess" -> result.success(hasNotificationAccess())
+                "requestNotificationAccess" -> {
+                    startActivity(
+                        Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                    )
+                    result.success(true)
+                }
                 else -> result.notImplemented()
             }
         }
@@ -106,6 +115,20 @@ class MainActivity : FlutterActivity() {
         val enabled = Settings.Secure.getString(
             contentResolver,
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ) ?: return false
+        val splitter = TextUtils.SimpleStringSplitter(':')
+        splitter.setString(enabled)
+        while (splitter.hasNext()) {
+            if (splitter.next().equals(expected, ignoreCase = true)) return true
+        }
+        return false
+    }
+
+    private fun hasNotificationAccess(): Boolean {
+        val expected = "$packageName/${NotificationMuteService::class.java.name}"
+        val enabled = Settings.Secure.getString(
+            contentResolver,
+            Settings.Secure.ENABLED_NOTIFICATION_LISTENERS
         ) ?: return false
         val splitter = TextUtils.SimpleStringSplitter(':')
         splitter.setString(enabled)

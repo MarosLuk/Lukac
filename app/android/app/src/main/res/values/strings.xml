@@ -2,4 +2,5 @@
 <resources>
     <string name="app_name">Time Rewards</string>
     <string name="accessibility_service_description">Detects when a shielded app is opened and returns the user to the home screen while the reward shield is active.</string>
+    <string name="notification_service_label">Time Rewards — mute blocked apps</string>
 </resources>
