@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+      Required to use FamilyControls / ManagedSettings APIs. You must apply
+      for this entitlement at:
+        https://developer.apple.com/contact/request/family-controls-distribution
+      Without Apple's approval, builds signed with this entitlement will fail
+      provisioning. For early local development on a real device you can sign
+      with a free team and test limited auth flows, but shielding apps
+      requires the real entitlement on a paid developer account.
+    -->
+    <key>com.apple.developer.family-controls</key>
+    <true/>
+</dict>
+</plist>

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Time Rewards</string>
+    <string name="accessibility_service_description">Detects when a shielded app is opened and returns the user to the home screen while the reward shield is active.</string>
+</resources>
