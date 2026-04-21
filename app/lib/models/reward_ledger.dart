@@ -20,10 +20,19 @@ class RewardLedger {
     return diff.isNegative ? Duration.zero : diff;
   }
 
-  RewardLedger copyWith({int? balanceSeconds, DateTime? shieldLiftedUntil}) =>
+  /// `clearShieldLiftedUntil: true` forces the [shieldLiftedUntil] field to
+  /// `null`. Without it, a `null` passed for [shieldLiftedUntil] is treated
+  /// as "not provided" and the existing value is retained.
+  RewardLedger copyWith({
+    int? balanceSeconds,
+    DateTime? shieldLiftedUntil,
+    bool clearShieldLiftedUntil = false,
+  }) =>
       RewardLedger(
         balanceSeconds: balanceSeconds ?? this.balanceSeconds,
-        shieldLiftedUntil: shieldLiftedUntil ?? this.shieldLiftedUntil,
+        shieldLiftedUntil: clearShieldLiftedUntil
+            ? null
+            : (shieldLiftedUntil ?? this.shieldLiftedUntil),
       );
 
   Map<String, dynamic> toJson() => {

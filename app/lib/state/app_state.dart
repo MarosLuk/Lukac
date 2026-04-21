@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 
@@ -39,12 +40,21 @@ class AppState extends ChangeNotifier {
   void _startTicker() {
     _ticker?.cancel();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_ledger.shieldLiftedUntil != null && !_ledger.isShieldLifted) {
-        _ledger = _ledger.copyWith(shieldLiftedUntil: null);
+      final hasActiveLift = _ledger.shieldLiftedUntil != null;
+      if (!hasActiveLift) {
+        // Nothing to tick — avoid spamming listeners every second.
+        return;
+      }
+      if (!_ledger.isShieldLifted) {
+        // Lift just expired: clear the window, re-apply the shield, notify.
+        _ledger = _ledger.copyWith(clearShieldLiftedUntil: true);
         unawaited(_storage.saveLedger(_ledger));
         unawaited(_syncShield());
+        notifyListeners();
+      } else {
+        // Still in the unlock window — tick the countdown UI.
+        notifyListeners();
       }
-      notifyListeners();
     });
   }
 
@@ -58,16 +68,18 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> completeTask(String id) async {
-    _tasks = [
-      for (final t in _tasks)
-        if (t.id == id && !t.completed)
-          t.copyWith(completed: true, completedAt: DateTime.now())
-        else
-          t,
-    ];
-    final task = _tasks.firstWhere((t) => t.id == id);
+    final idx = _tasks.indexWhere((t) => t.id == id);
+    if (idx < 0) return;
+    final existing = _tasks[idx];
+    // Idempotent: only credit when transitioning from pending -> completed.
+    if (existing.completed) return;
+    final updated = existing.copyWith(
+      completed: true,
+      completedAt: DateTime.now(),
+    );
+    _tasks = [..._tasks]..[idx] = updated;
     _ledger = _ledger.copyWith(
-      balanceSeconds: _ledger.balanceSeconds + task.rewardMinutes * 60,
+      balanceSeconds: _ledger.balanceSeconds + updated.rewardMinutes * 60,
     );
     await _storage.saveTasks(_tasks);
     await _storage.saveLedger(_ledger);
@@ -108,7 +120,17 @@ class AppState extends ChangeNotifier {
 
   Future<void> _syncShield() async {
     try {
-      if (_ledger.isShieldLifted || _blockedApps.isEmpty) {
+      if (_ledger.isShieldLifted) {
+        await _enforcement.clearShield();
+        return;
+      }
+      // On iOS the `packages` list is ignored by the native layer — the
+      // FamilyActivityPicker selection is stored by the system, so we
+      // always forward an applyShield call. On Android we only apply if
+      // the user has chosen at least one package.
+      if (Platform.isIOS) {
+        await _enforcement.applyShield(packages: _blockedApps);
+      } else if (_blockedApps.isEmpty) {
         await _enforcement.clearShield();
       } else {
         await _enforcement.applyShield(packages: _blockedApps);

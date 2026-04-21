@@ -13,14 +13,22 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool? _hasPermissions;
+  bool _didInitialRefresh = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _refresh();
+    // Only refresh once on first mount — AppState notifies every tick
+    // via the ticker, which would otherwise re-invoke `hasPermissions`
+    // on the platform channel continuously.
+    if (!_didInitialRefresh) {
+      _didInitialRefresh = true;
+      _refresh();
+    }
   }
 
   Future<void> _refresh() async {
+    if (!mounted) return;
     final state = AppStateScope.of(context);
     try {
       final ok = await state.enforcement.hasPermissions();

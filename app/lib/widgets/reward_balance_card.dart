@@ -63,7 +63,7 @@ class RewardBalanceCard extends StatelessWidget {
               children: [
                 for (final mins in const [5, 15, 30])
                   FilledButton.tonal(
-                    onPressed: ledger.balanceSeconds >= 60
+                    onPressed: ledger.balanceSeconds >= mins * 60
                         ? () =>
                             state.spendReward(Duration(minutes: mins))
                         : null,

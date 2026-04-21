@@ -1,10 +1,12 @@
 import Foundation
 import UIKit
 
-#if canImport(FamilyControls) && canImport(ManagedSettings)
+#if canImport(FamilyControls)
 import FamilyControls
-import ManagedSettings
 import SwiftUI
+#endif
+#if canImport(ManagedSettings)
+import ManagedSettings
 #endif
 
 /// Wraps FamilyControls + ManagedSettings so the Flutter layer can request
@@ -77,14 +79,13 @@ final class FamilyControlsBridge: NSObject {
                 completion(false)
                 return
             }
+            let initial = self.selection
             let vc = UIHostingController(rootView: PickerView(
-                selection: Binding(
-                    get: { self.selection },
-                    set: { self.selection = $0 }
-                ),
-                onDone: { [weak self] saved in
-                    presenter.dismiss(animated: true) {
-                        if saved {
+                initialSelection: initial,
+                onDone: { [weak self, weak presenter] saved, updated in
+                    presenter?.dismiss(animated: true) {
+                        if saved, let updated = updated {
+                            self?.selection = updated
                             self?.saveSelection()
                         }
                         completion(saved)
@@ -161,36 +162,33 @@ final class FamilyControlsBridge: NSObject {
 #if canImport(FamilyControls)
 @available(iOS 16.0, *)
 private struct PickerView: View {
-    @Binding var selection: FamilyActivitySelection
-    let onDone: (Bool) -> Void
+    let onDone: (Bool, FamilyActivitySelection?) -> Void
 
     @State private var workingSelection: FamilyActivitySelection
 
     init(
-        selection: Binding<FamilyActivitySelection>,
-        onDone: @escaping (Bool) -> Void
+        initialSelection: FamilyActivitySelection,
+        onDone: @escaping (Bool, FamilyActivitySelection?) -> Void
     ) {
-        self._selection = selection
         self.onDone = onDone
-        self._workingSelection = State(initialValue: selection.wrappedValue)
+        self._workingSelection = State(initialValue: initialSelection)
     }
 
     var body: some View {
         NavigationView {
             FamilyActivityPicker(selection: $workingSelection)
                 .navigationTitle("Apps to shield")
+                .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") { onDone(false) }
+                        Button("Cancel") { onDone(false, nil) }
                     }
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("Save") {
-                            selection = workingSelection
-                            onDone(true)
-                        }
+                        Button("Save") { onDone(true, workingSelection) }
                     }
                 }
         }
+        .navigationViewStyle(.stack)
     }
 }
 #endif

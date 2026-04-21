@@ -3,8 +3,8 @@ package com.lukac.timerewards
 import android.app.AppOpsManager
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
@@ -26,6 +26,7 @@ class MainActivity : FlutterActivity() {
                     result.success(true)
                 }
                 "listInstalledApps" -> result.success(listInstalledApps())
+                "pickApps" -> result.notImplemented()
                 "applyShield" -> {
                     @Suppress("UNCHECKED_CAST")
                     val pkgs = (call.argument<List<String>>("packages") ?: emptyList())
@@ -96,22 +97,27 @@ class MainActivity : FlutterActivity() {
 
     private fun listInstalledApps(): List<Map<String, String>> {
         val pm = packageManager
-        val flags = PackageManager.GET_META_DATA
-        val apps = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            pm.getInstalledApplications(
-                PackageManager.ApplicationInfoFlags.of(flags.toLong())
+        val intent = Intent(Intent.ACTION_MAIN).apply {
+            addCategory(Intent.CATEGORY_LAUNCHER)
+        }
+        val resolved: List<ResolveInfo> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pm.queryIntentActivities(
+                intent,
+                PackageManager.ResolveInfoFlags.of(0L)
             )
         } else {
             @Suppress("DEPRECATION")
-            pm.getInstalledApplications(flags)
+            pm.queryIntentActivities(intent, 0)
         }
-        return apps
-            .filter { it.packageName != packageName }
-            .filter { (it.flags and ApplicationInfo.FLAG_SYSTEM) == 0 || pm.getLaunchIntentForPackage(it.packageName) != null }
-            .map {
+        val seen = HashSet<String>()
+        return resolved
+            .mapNotNull { info ->
+                val pkg = info.activityInfo?.packageName ?: return@mapNotNull null
+                if (pkg == packageName) return@mapNotNull null
+                if (!seen.add(pkg)) return@mapNotNull null
                 mapOf(
-                    "packageName" to it.packageName,
-                    "label" to (pm.getApplicationLabel(it).toString())
+                    "packageName" to pkg,
+                    "label" to info.loadLabel(pm).toString()
                 )
             }
             .sortedBy { it["label"]!!.lowercase() }

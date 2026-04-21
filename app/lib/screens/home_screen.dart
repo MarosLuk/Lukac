@@ -18,12 +18,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = AppStateScope.of(context);
-    final pages = [
+    const pages = <Widget>[
       _DashboardTab(),
-      const TasksScreen(),
-      const BlockedAppsScreen(),
-      const SettingsScreen(),
+      TasksScreen(),
+      BlockedAppsScreen(),
+      SettingsScreen(),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -61,6 +60,8 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _DashboardTab extends StatelessWidget {
+  const _DashboardTab();
+
   @override
   Widget build(BuildContext context) {
     final state = AppStateScope.of(context);

@@ -25,8 +25,24 @@ class _BlockedAppsScreenState extends State<BlockedAppsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (Platform.isIOS) return _IosPicker();
-    return _AndroidPicker(future: _future!);
+    if (Platform.isIOS) return const _IosPicker();
+    if (Platform.isAndroid) {
+      final future = _future;
+      if (future == null) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      return _AndroidPicker(future: future);
+    }
+    // Desktop / unsupported platforms: nothing to shield.
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Text(
+          'App shielding is only supported on Android and iOS.',
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
   }
 }
 
@@ -78,6 +94,8 @@ class _AndroidPicker extends StatelessWidget {
 }
 
 class _IosPicker extends StatelessWidget {
+  const _IosPicker();
+
   @override
   Widget build(BuildContext context) {
     final state = AppStateScope.of(context);
