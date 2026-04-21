@@ -45,26 +45,44 @@ Transitions are driven by:
   already-completed task does not re-credit minutes.
 - Delete via trash icon (tasks tab) or swipe-to-delete (planned).
 
-### 🟡 Task-source integrations (sync from external apps)
+### Task-source integrations (sync from external apps)
 
 **Goal:** let the user pick one or more external sources to pull tasks from.
 Each source runs its own sync; synced tasks show in the Tasks tab alongside
 local ones and carry a source badge.
 
-**Planned sources:**
+**Source catalogue:**
 
-| Source | Auth | Library / API | Notes |
-|---|---|---|---|
-| Google Tasks | OAuth2 via `google_sign_in` | `googleapis` (`TasksApi`) | Read + mark done |
-| Google Calendar | OAuth2 via `google_sign_in` | `googleapis` (`CalendarApi`) | Events as time-boxed tasks |
-| Microsoft To Do | OAuth2 device flow or redirect | Microsoft Graph `/me/todo/lists` | |
-| Microsoft Teams tasks | OAuth2 | Graph Planner API | Planner tasks assigned to user |
-| Apple Reminders | Local only (iOS) | EventKit via `device_calendar` or a custom channel | iOS only |
-| Apple Calendar | Local only (iOS) | EventKit | iOS only |
-| Todoist | Personal API token | Todoist REST v2 | |
-| Notion | OAuth2 + database id | Notion API | |
-| Trello | OAuth1 | Trello REST | |
-| ICS URL | None | Any public `.ics` feed | Generic calendar |
+| Status | Source | Auth | Library / API | Notes |
+|---|---|---|---|---|
+| ✅ | ICS URL | None | Any public `.ics` feed | Generic calendar; 14-day horizon |
+| ✅ | Todoist | Personal API token | Todoist REST v2 | Pending `/tasks`, skip completed |
+| 🟡 | Google Tasks | OAuth2 via `google_sign_in` | `googleapis` (`TasksApi`) | Read + mark done |
+| 🟡 | Google Calendar | OAuth2 via `google_sign_in` | `googleapis` (`CalendarApi`) | Events as time-boxed tasks |
+| 🟡 | Microsoft To Do | OAuth2 device flow or redirect | Microsoft Graph `/me/todo/lists` | |
+| 🟡 | Microsoft Teams tasks | OAuth2 | Graph Planner API | Planner tasks assigned to user |
+| 🟡 | Apple Reminders | Local only (iOS) | EventKit via `device_calendar` or a custom channel | iOS only |
+| 🟡 | Apple Calendar | Local only (iOS) | EventKit | iOS only |
+| 🟡 | Notion | OAuth2 + database id | Notion API | |
+| 🟡 | Trello | OAuth1 | Trello REST | |
+
+**Shipped in pass 1 (✅ rows above):**
+- `TaskSource` abstraction + `SourceDescriptor` registry in
+  `lib/services/sources/`.
+- `ConnectedSourcesNotifier` + `ExternalTasksNotifier` providers.
+- Sources tab in the bottom nav, form-based connect/disconnect sheet,
+  per-source "Sync now", "Accept" flow to promote an external task to a
+  local `TaskItem` with a reward slider.
+- Persistence via SharedPreferences (`sources_v1`, `external_tasks_v1`).
+
+**Follow-ups:**
+- Migrate token storage from SharedPreferences to `flutter_secure_storage`.
+- Background sync (foreground app timer + Android WorkManager job).
+- Source-side completion write-back (`markDone(externalId)`) so accepting /
+  completing a task closes it upstream too.
+- OAuth sources (Google / Microsoft / Notion / Trello) — the descriptor
+  registry already has a hook for them; they add an "auth flow" path
+  alongside `fields` and still land in `TaskSourceConfig.fields`.
 
 **UX:**
 - New **Sources** tab in the bottom nav (or a section in Settings).
@@ -76,16 +94,14 @@ local ones and carry a source badge.
 - Manual "Sync now" button. Background sync every N minutes while the app
   is foregrounded; on Android a periodic WorkManager task for background.
 
-**Data shape:**
+**Data shape (shipped):**
 ```dart
 abstract class TaskSource {
-  String get id;                 // stable id e.g. "google-tasks"
+  String get id;                 // stable id e.g. "ics", "todoist"
   String get displayName;
-  Future<void> connect();        // OAuth flow
-  Future<void> disconnect();
-  Future<bool> isConnected();
-  Future<List<ExternalTask>> fetchPending({DateTime? since});
-  Future<void> markDone(String externalId);  // push completion back
+  String get description;
+  IconData get icon;
+  Future<List<ExternalTask>> fetchPending({DateTime? horizonEnd});
 }
 
 class ExternalTask {
@@ -95,13 +111,26 @@ class ExternalTask {
   final DateTime? dueAt;
   final String? url;
 }
+
+class TaskSourceConfig {
+  final String sourceId;
+  final Map<String, String> fields;    // url / token / ...
+  final bool enabled;
+  final DateTime? lastSyncAt;
+}
 ```
+`connect()/disconnect()` are handled at the notifier level — an adapter is
+a plain function of its `TaskSourceConfig`, so a future OAuth flow just
+drops its tokens into `fields` and the rest of the pipeline stays the same.
 
 Providers:
-- `taskSourcesProvider: Provider<List<TaskSource>>` — the registry.
-- `connectedSourcesProvider: AsyncNotifierProvider` — which are connected.
-- `externalTasksProvider: AsyncNotifierProvider<List<ExternalTask>>` — union
-  of all connected sources, refreshable.
+- `availableSourceTypesProvider: Provider<List<SourceDescriptor>>` — the
+  registry of source *types* (id + display metadata + field specs + a
+  factory that builds a `TaskSource` from a config).
+- `connectedSourcesProvider: AsyncNotifierProvider<List<TaskSourceConfig>>`
+  — which configs are persisted (connect / disconnect / setEnabled).
+- `externalTasksProvider: AsyncNotifierProvider<List<ExternalTask>>` — the
+  refreshable union of all enabled sources.
 
 Merging: external tasks become locally-ledgered `TaskItem`s when the user
 taps "accept" (or automatically if auto-accept is on for that source), so
@@ -288,9 +317,9 @@ ProviderScope
 ├── permissionStatusProvider        FutureProvider<bool>
 ├── installedAppsProvider           FutureProvider<List<InstalledApp>>
 ├── shieldSyncProvider              Provider (side-effect: watches ledger + blocked + allowed → applyShield/clearShield)
-├── taskSourcesProvider    🟡       Provider<List<TaskSource>>
-├── connectedSourcesProvider 🟡     AsyncNotifierProvider<List<String>>
-└── externalTasksProvider  🟡       AsyncNotifierProvider<List<ExternalTask>>
+├── availableSourceTypesProvider    Provider<List<SourceDescriptor>>
+├── connectedSourcesProvider        AsyncNotifierProvider<List<TaskSourceConfig>>
+└── externalTasksProvider           AsyncNotifierProvider<List<ExternalTask>>
 ```
 
 ### Native bridges

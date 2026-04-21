@@ -6,6 +6,7 @@ import '../widgets/reward_balance_card.dart';
 import '../widgets/ui/section_header.dart';
 import 'blocked_apps_screen.dart';
 import 'settings_screen.dart';
+import 'sources_screen.dart';
 import 'tasks_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -18,13 +19,20 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _index = 0;
 
-  static const _titles = <String>['Home', 'Tasks', 'Blocked', 'Settings'];
+  static const _titles = <String>[
+    'Home',
+    'Tasks',
+    'Sources',
+    'Blocked',
+    'Settings',
+  ];
 
   @override
   Widget build(BuildContext context) {
     const pages = <Widget>[
       _DashboardTab(),
       TasksScreen(),
+      SourcesScreen(),
       BlockedAppsScreen(),
       SettingsScreen(),
     ];
@@ -61,6 +69,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               icon: Icon(Icons.check_circle_outline),
               selectedIcon: Icon(Icons.check_circle),
               label: 'Tasks',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.sync_outlined),
+              selectedIcon: Icon(Icons.sync),
+              label: 'Sources',
             ),
             NavigationDestination(
               icon: Icon(Icons.block_outlined),
