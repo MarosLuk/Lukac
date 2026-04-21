@@ -26,6 +26,10 @@ class BlockedAppsScreen extends ConsumerWidget {
   }
 }
 
+/// Which section a given row is currently bucketed into. An app belongs to
+/// exactly one of these; the two checkboxes per row are mutually exclusive.
+enum _Bucket { none, blocked, allowed }
+
 class _AndroidPicker extends ConsumerStatefulWidget {
   const _AndroidPicker();
 
@@ -47,8 +51,11 @@ class _AndroidPickerState extends ConsumerState<_AndroidPicker> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final installedAsync = ref.watch(installedAppsProvider);
-    final selected =
+    final blocked =
         (ref.watch(blockedAppsProvider).valueOrNull ?? const <String>[])
+            .toSet();
+    final allowed =
+        (ref.watch(allowedAppsProvider).valueOrNull ?? const <String>[])
             .toSet();
 
     return Column(
@@ -74,6 +81,28 @@ class _AndroidPickerState extends ConsumerState<_AndroidPicker> {
                       },
                     ),
             ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Tick an app in one column: Block to shield it, Allow to '
+                  'keep it usable even while the shield is on.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              TextButton.icon(
+                icon: const Icon(Icons.auto_awesome),
+                label: const Text('Suggest essentials'),
+                onPressed: () => _suggestEssentials(context, allowed),
+              ),
+            ],
           ),
         ),
         Expanded(
@@ -115,21 +144,15 @@ class _AndroidPickerState extends ConsumerState<_AndroidPicker> {
                 ),
                 itemBuilder: (_, i) {
                   final a = filtered[i];
-                  final isSelected = selected.contains(a.packageName);
+                  final bucket = allowed.contains(a.packageName)
+                      ? _Bucket.allowed
+                      : blocked.contains(a.packageName)
+                          ? _Bucket.blocked
+                          : _Bucket.none;
                   return _AppRow(
                     app: a,
-                    selected: isSelected,
-                    onChanged: (v) {
-                      final next = {...selected};
-                      if (v) {
-                        next.add(a.packageName);
-                      } else {
-                        next.remove(a.packageName);
-                      }
-                      ref
-                          .read(blockedAppsProvider.notifier)
-                          .setPackages(next.toList()..sort());
-                    },
+                    bucket: bucket,
+                    onChanged: (next) => _applyBucket(a.packageName, next),
                   );
                 },
               );
@@ -139,73 +162,216 @@ class _AndroidPickerState extends ConsumerState<_AndroidPicker> {
       ],
     );
   }
+
+  /// Applies a mutually-exclusive bucket transition for [pkg]: enforces the
+  /// "an app can be in neither, in blocked, or in allowed — never both"
+  /// invariant by removing from the opposite list on every change.
+  void _applyBucket(String pkg, _Bucket next) {
+    final blocked = {
+      ...(ref.read(blockedAppsProvider).valueOrNull ?? const <String>[])
+    };
+    final allowed = {
+      ...(ref.read(allowedAppsProvider).valueOrNull ?? const <String>[])
+    };
+    switch (next) {
+      case _Bucket.blocked:
+        allowed.remove(pkg);
+        blocked.add(pkg);
+        break;
+      case _Bucket.allowed:
+        blocked.remove(pkg);
+        allowed.add(pkg);
+        break;
+      case _Bucket.none:
+        blocked.remove(pkg);
+        allowed.remove(pkg);
+        break;
+    }
+    ref
+        .read(blockedAppsProvider.notifier)
+        .setPackages(blocked.toList()..sort());
+    ref
+        .read(allowedAppsProvider.notifier)
+        .setPackages(allowed.toList()..sort());
+  }
+
+  /// Resolves a small canonical set of essential apps from the platform and
+  /// offers to add them to the allow-list. The user must confirm before
+  /// anything is persisted.
+  Future<void> _suggestEssentials(
+    BuildContext context,
+    Set<String> currentAllowed,
+  ) async {
+    final List<InstalledApp> essentials;
+    try {
+      essentials = await ref.read(essentialAppsProvider.future);
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not look up essentials: $e')),
+      );
+      return;
+    }
+    if (!context.mounted) return;
+    if (essentials.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No essential apps found')),
+      );
+      return;
+    }
+    final accept = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Suggested essentials'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'These default system apps will be added to the always-allowed '
+              'list so they stay usable while the shield is active:',
+            ),
+            const SizedBox(height: 12),
+            ...essentials.map(
+              (e) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Text('• ${e.label}'),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+    if (accept != true) return;
+    // Merge essentials into the allow-list and remove any of them from the
+    // blocked-list to preserve mutual exclusion.
+    final blocked = {
+      ...(ref.read(blockedAppsProvider).valueOrNull ?? const <String>[])
+    };
+    final allowed = {...currentAllowed};
+    for (final e in essentials) {
+      allowed.add(e.packageName);
+      blocked.remove(e.packageName);
+    }
+    await ref
+        .read(blockedAppsProvider.notifier)
+        .setPackages(blocked.toList()..sort());
+    await ref
+        .read(allowedAppsProvider.notifier)
+        .setPackages(allowed.toList()..sort());
+  }
 }
 
 class _AppRow extends StatelessWidget {
   const _AppRow({
     required this.app,
-    required this.selected,
+    required this.bucket,
     required this.onChanged,
   });
 
   final InstalledApp app;
-  final bool selected;
-  final ValueChanged<bool> onChanged;
+  final _Bucket bucket;
+  final ValueChanged<_Bucket> onChanged;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return InkWell(
-      onTap: () => onChanged(!selected),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(10),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              app.label.isEmpty ? '?' : app.label[0].toUpperCase(),
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: cs.onSurfaceVariant,
               ),
-              alignment: Alignment.center,
-              child: Text(
-                app.label.isEmpty ? '?' : app.label[0].toUpperCase(),
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: cs.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  app.label,
+                  style: theme.textTheme.bodyLarge,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    app.label,
-                    style: theme.textTheme.bodyLarge,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                Text(
+                  app.packageName,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
                   ),
-                  Text(
-                    app.packageName,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-            Switch(
-              value: selected,
-              onChanged: onChanged,
+          ),
+          _BucketToggle(
+            label: 'Block',
+            selected: bucket == _Bucket.blocked,
+            onTap: () => onChanged(
+              bucket == _Bucket.blocked ? _Bucket.none : _Bucket.blocked,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 8),
+          _BucketToggle(
+            label: 'Allow',
+            selected: bucket == _Bucket.allowed,
+            onTap: () => onChanged(
+              bucket == _Bucket.allowed ? _Bucket.none : _Bucket.allowed,
+            ),
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class _BucketToggle extends StatelessWidget {
+  const _BucketToggle({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return FilterChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onTap(),
+      showCheckmark: true,
+      visualDensity: VisualDensity.compact,
+      selectedColor: cs.primaryContainer,
+      labelStyle: theme.textTheme.labelMedium,
     );
   }
 }
@@ -230,8 +396,9 @@ class _IosPicker extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'iOS stores your shielded app selection at the system level. '
-              'Tap below to choose which apps to shield.',
+              'iOS stores your shielded and always-allowed selections at the '
+              'system level. The allowed selection is subtracted from the '
+              'shielded one when the shield is active.',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
@@ -240,13 +407,13 @@ class _IosPicker extends ConsumerWidget {
             const SizedBox(height: 24),
             FilledButton.icon(
               icon: const Icon(Icons.apps),
-              label: const Text('Pick apps'),
+              label: const Text('Pick apps to shield'),
               onPressed: () async {
                 final enforcement = ref.read(enforcementServiceProvider);
                 final ok = await enforcement.pickAppsNative();
                 if (ok && context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Selection saved')),
+                    const SnackBar(content: Text('Shielded selection saved')),
                   );
                   // Trigger a re-sync with whatever the OS now holds.
                   final current =
@@ -254,6 +421,28 @@ class _IosPicker extends ConsumerWidget {
                           const <String>[];
                   await ref
                       .read(blockedAppsProvider.notifier)
+                      .setPackages(current);
+                }
+              },
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.verified_user_outlined),
+              label: const Text('Pick always-allowed apps'),
+              onPressed: () async {
+                final enforcement = ref.read(enforcementServiceProvider);
+                final ok = await enforcement.pickAllowedAppsNative();
+                if (ok && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Allowed selection saved')),
+                  );
+                  // Trigger a re-sync so the bridge's applyShield() runs with
+                  // the new allowedSelection subtracted from the shielded set.
+                  final current =
+                      ref.read(allowedAppsProvider).valueOrNull ??
+                          const <String>[];
+                  await ref
+                      .read(allowedAppsProvider.notifier)
                       .setPackages(current);
                 }
               },

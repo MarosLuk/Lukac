@@ -9,6 +9,7 @@ class StorageService {
   static const _kTasks = 'tasks_v1';
   static const _kLedger = 'ledger_v1';
   static const _kBlockedApps = 'blocked_apps_v1';
+  static const _kAllowedApps = 'allowed_apps_v1';
 
   Future<List<TaskItem>> loadTasks() async {
     final prefs = await SharedPreferences.getInstance();
@@ -48,5 +49,15 @@ class StorageService {
   Future<void> saveBlockedApps(List<String> packages) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(_kBlockedApps, packages);
+  }
+
+  Future<List<String>> loadAllowedApps() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_kAllowedApps) ?? const [];
+  }
+
+  Future<void> saveAllowedApps(List<String> packages) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_kAllowedApps, packages);
   }
 }

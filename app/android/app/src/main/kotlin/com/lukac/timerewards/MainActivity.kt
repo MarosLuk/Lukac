@@ -26,15 +26,35 @@ class MainActivity : FlutterActivity() {
                     result.success(true)
                 }
                 "listInstalledApps" -> result.success(listInstalledApps())
+                "listEssentialApps" -> result.success(listEssentialApps())
                 "pickApps" -> result.notImplemented()
+                "pickAllowedApps" -> result.notImplemented()
                 "applyShield" -> {
-                    @Suppress("UNCHECKED_CAST")
-                    val pkgs = (call.argument<List<String>>("packages") ?: emptyList())
-                    AppBlockerService.updateBlocklist(this, pkgs, shieldActive = true)
+                    val pkgs = call.argument<List<String>>("packages") ?: emptyList()
+                    val allowed = call.argument<List<String>>("allowed") ?: emptyList()
+                    AppBlockerService.updateBlocklist(
+                        this,
+                        blocked = pkgs,
+                        allowed = allowed,
+                        shieldActive = true,
+                    )
                     result.success(null)
                 }
                 "clearShield" -> {
-                    AppBlockerService.updateBlocklist(this, emptyList(), shieldActive = false)
+                    // Preserve the current allow-list so it is available the
+                    // next time the shield is applied.
+                    val currentAllowed = AppBlockerService.readAllowed(this)
+                    AppBlockerService.updateBlocklist(
+                        this,
+                        blocked = emptyList(),
+                        allowed = currentAllowed,
+                        shieldActive = false,
+                    )
+                    result.success(null)
+                }
+                "setAllowList" -> {
+                    val allowed = call.argument<List<String>>("packages") ?: emptyList()
+                    AppBlockerService.updateAllowList(this, allowed)
                     result.success(null)
                 }
                 else -> result.notImplemented()
@@ -93,6 +113,41 @@ class MainActivity : FlutterActivity() {
             if (splitter.next().equals(expected, ignoreCase = true)) return true
         }
         return false
+    }
+
+    /**
+     * Resolves a small canonical set of "essential" apps the user typically
+     * needs reachable even while the shield is active: the default dialer,
+     * the default SMS app, the default maps app, and the default clock.
+     *
+     * We intentionally only include apps that are actually installed and
+     * answer to the canonical intents, so on a device that doesn't have,
+     * say, a maps app, it is simply omitted.
+     */
+    private fun listEssentialApps(): List<Map<String, String>> {
+        val pm = packageManager
+        val candidates = listOf(
+            Intent(Intent.ACTION_DIAL),
+            Intent(Intent.ACTION_SENDTO, android.net.Uri.parse("smsto:")),
+            Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:0,0")),
+            Intent(android.provider.AlarmClock.ACTION_SHOW_ALARMS),
+        )
+        val seen = HashSet<String>()
+        val results = mutableListOf<Map<String, String>>()
+        for (intent in candidates) {
+            val info: ResolveInfo? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                pm.resolveActivity(intent, PackageManager.ResolveInfoFlags.of(0L))
+            } else {
+                @Suppress("DEPRECATION")
+                pm.resolveActivity(intent, 0)
+            }
+            val pkg = info?.activityInfo?.packageName ?: continue
+            if (pkg == packageName) continue
+            if (!seen.add(pkg)) continue
+            val label = info.loadLabel(pm).toString()
+            results.add(mapOf("packageName" to pkg, "label" to label))
+        }
+        return results.sortedBy { it["label"]!!.lowercase() }
     }
 
     private fun listInstalledApps(): List<Map<String, String>> {

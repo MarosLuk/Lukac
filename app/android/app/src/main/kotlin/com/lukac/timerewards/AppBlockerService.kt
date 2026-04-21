@@ -26,6 +26,12 @@ class AppBlockerService : AccessibilityService() {
         val shieldActive = prefs.getBoolean(KEY_SHIELD_ACTIVE, false)
         if (!shieldActive) return
 
+        // Allow-list takes precedence over the blocked set. An always-allowed
+        // package is never sent home, even if it somehow ended up in both
+        // sets (the UI enforces mutual exclusion, but be defensive here).
+        val allowed = prefs.getStringSet(KEY_ALLOWED, emptySet()) ?: emptySet()
+        if (pkg in allowed) return
+
         val blocked = prefs.getStringSet(KEY_BLOCKED, emptySet()) ?: emptySet()
         if (blocked.isEmpty()) return
         if (pkg == applicationContext.packageName) return
@@ -41,6 +47,7 @@ class AppBlockerService : AccessibilityService() {
     companion object {
         private const val PREFS = "time_rewards_blocker"
         private const val KEY_BLOCKED = "blocked_packages"
+        private const val KEY_ALLOWED = "allowed_packages"
         private const val KEY_SHIELD_ACTIVE = "shield_active"
 
         private val SYSTEM_PACKAGES = setOf(
@@ -50,15 +57,33 @@ class AppBlockerService : AccessibilityService() {
 
         fun updateBlocklist(
             context: Context,
-            packages: List<String>,
+            blocked: List<String>,
+            allowed: List<String>,
             shieldActive: Boolean,
         ) {
             context.applicationContext
                 .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .edit()
-                .putStringSet(KEY_BLOCKED, packages.toSet())
+                .putStringSet(KEY_BLOCKED, blocked.toSet())
+                .putStringSet(KEY_ALLOWED, allowed.toSet())
                 .putBoolean(KEY_SHIELD_ACTIVE, shieldActive)
                 .apply()
+        }
+
+        /** Updates just the allow-list without touching the shield state. */
+        fun updateAllowList(context: Context, allowed: List<String>) {
+            context.applicationContext
+                .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .edit()
+                .putStringSet(KEY_ALLOWED, allowed.toSet())
+                .apply()
+        }
+
+        fun readAllowed(context: Context): List<String> {
+            val set = context.applicationContext
+                .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .getStringSet(KEY_ALLOWED, emptySet()) ?: emptySet()
+            return set.toList()
         }
     }
 }

@@ -174,6 +174,7 @@ class LedgerNotifier extends AsyncNotifier<RewardLedger> {
       ref.read(enforcementServiceProvider),
       ledger: state.valueOrNull ?? RewardLedger(),
       blockedApps: ref.read(blockedAppsProvider).valueOrNull ?? const [],
+      allowedApps: ref.read(allowedAppsProvider).valueOrNull ?? const [],
     );
   }
 }
@@ -200,6 +201,7 @@ class BlockedAppsNotifier extends AsyncNotifier<List<String>> {
       ref.read(enforcementServiceProvider),
       ledger: ref.read(ledgerProvider).valueOrNull ?? RewardLedger(),
       blockedApps: next,
+      allowedApps: ref.read(allowedAppsProvider).valueOrNull ?? const [],
     );
   }
 }
@@ -209,6 +211,51 @@ final blockedAppsProvider =
         BlockedAppsNotifier.new);
 
 // ---------------------------------------------------------------------------
+// Allowed apps (always-allowed even while the shield is active)
+// ---------------------------------------------------------------------------
+
+class AllowedAppsNotifier extends AsyncNotifier<List<String>> {
+  @override
+  Future<List<String>> build() async {
+    final storage = ref.read(storageServiceProvider);
+    return storage.loadAllowedApps();
+  }
+
+  Future<void> setPackages(List<String> packages) async {
+    final next = List<String>.unmodifiable(packages);
+    state = AsyncData(next);
+    await ref.read(storageServiceProvider).saveAllowedApps(next);
+    final enforcement = ref.read(enforcementServiceProvider);
+    // Push the allow-list to the native layer first so it is in place by the
+    // time the shield re-applies (Android AccessibilityService reads it live).
+    try {
+      await enforcement.setAllowList(packages: next);
+    } catch (_) {
+      // Native side may not be wired (desktop / tests). Ignore.
+    }
+    await _applyShield(
+      enforcement,
+      ledger: ref.read(ledgerProvider).valueOrNull ?? RewardLedger(),
+      blockedApps: ref.read(blockedAppsProvider).valueOrNull ?? const [],
+      allowedApps: next,
+    );
+  }
+}
+
+final allowedAppsProvider =
+    AsyncNotifierProvider<AllowedAppsNotifier, List<String>>(
+        AllowedAppsNotifier.new);
+
+/// Android-only helper that returns a small set of canonical "essential"
+/// apps (dialer, SMS, maps, etc.) that a user would typically want to
+/// always allow. On iOS it returns an empty list because FamilyControls
+/// already guards system apps.
+final essentialAppsProvider = FutureProvider<List<InstalledApp>>((ref) async {
+  if (!Platform.isAndroid) return const [];
+  return ref.read(enforcementServiceProvider).listEssentialApps();
+});
+
+// ---------------------------------------------------------------------------
 // Shield sync
 // ---------------------------------------------------------------------------
 
@@ -216,22 +263,30 @@ Future<void> _applyShield(
   EnforcementService enforcement, {
   required RewardLedger ledger,
   required List<String> blockedApps,
+  List<String> allowedApps = const [],
 }) async {
   try {
     if (ledger.isShieldLifted) {
       await enforcement.clearShield();
       return;
     }
-    // iOS ignores the `packages` list at the native layer — the
-    // FamilyActivityPicker selection is stored by the system, so we always
-    // forward an applyShield call. On Android we only apply if the user has
-    // chosen at least one package.
+    // iOS ignores the `packages` / `allowed` lists at the native layer —
+    // the FamilyActivityPicker selections are held by the bridge, so we
+    // always forward an applyShield call. On Android we only apply if the
+    // user has chosen at least one package, but we forward the allow-list
+    // either way so the accessibility service has it on hand.
     if (Platform.isIOS) {
-      await enforcement.applyShield(packages: blockedApps);
+      await enforcement.applyShield(
+        packages: blockedApps,
+        allowedPackages: allowedApps,
+      );
     } else if (blockedApps.isEmpty) {
       await enforcement.clearShield();
     } else {
-      await enforcement.applyShield(packages: blockedApps);
+      await enforcement.applyShield(
+        packages: blockedApps,
+        allowedPackages: allowedApps,
+      );
     }
   } catch (_) {
     // Native side may not be wired (e.g. running on desktop). Ignore.
@@ -247,20 +302,39 @@ final shieldSyncProvider = Provider<bool>((ref) {
     if (ledger == null) return;
     final blocked =
         ref.read(blockedAppsProvider).valueOrNull ?? const <String>[];
+    final allowed =
+        ref.read(allowedAppsProvider).valueOrNull ?? const <String>[];
     unawaited(_applyShield(
       ref.read(enforcementServiceProvider),
       ledger: ledger,
       blockedApps: blocked,
+      allowedApps: allowed,
     ));
   });
   ref.listen<AsyncValue<List<String>>>(blockedAppsProvider, (prev, next) {
     final blocked = next.valueOrNull;
     if (blocked == null) return;
     final ledger = ref.read(ledgerProvider).valueOrNull ?? RewardLedger();
+    final allowed =
+        ref.read(allowedAppsProvider).valueOrNull ?? const <String>[];
     unawaited(_applyShield(
       ref.read(enforcementServiceProvider),
       ledger: ledger,
       blockedApps: blocked,
+      allowedApps: allowed,
+    ));
+  });
+  ref.listen<AsyncValue<List<String>>>(allowedAppsProvider, (prev, next) {
+    final allowed = next.valueOrNull;
+    if (allowed == null) return;
+    final ledger = ref.read(ledgerProvider).valueOrNull ?? RewardLedger();
+    final blocked =
+        ref.read(blockedAppsProvider).valueOrNull ?? const <String>[];
+    unawaited(_applyShield(
+      ref.read(enforcementServiceProvider),
+      ledger: ledger,
+      blockedApps: blocked,
+      allowedApps: allowed,
     ));
   });
   return true;

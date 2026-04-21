@@ -32,13 +32,18 @@ final class FamilyControlsBridge: NSObject {
     #endif
 
     #if canImport(FamilyControls)
+    /// The user's "apps to shield" selection.
     private var selection = FamilyActivitySelection()
+    /// The user's "always allowed" selection, subtracted from `selection`
+    /// when the shield is applied so those apps remain usable.
+    private var allowedSelection = FamilyActivitySelection()
     #endif
 
     init(presenter: UIViewController) {
         self.presenter = presenter
         super.init()
         loadSelection()
+        loadAllowedSelection()
     }
 
     // MARK: - Authorization
@@ -70,7 +75,7 @@ final class FamilyControlsBridge: NSObject {
         completion(false)
     }
 
-    // MARK: - Picker
+    // MARK: - Picker (shielded apps)
 
     func presentPicker(completion: @escaping (Bool) -> Void) {
         #if canImport(FamilyControls)
@@ -81,6 +86,7 @@ final class FamilyControlsBridge: NSObject {
             }
             let initial = self.selection
             let vc = UIHostingController(rootView: PickerView(
+                title: "Apps to shield",
                 initialSelection: initial,
                 onDone: { [weak self, weak presenter] saved, updated in
                     presenter?.dismiss(animated: true) {
@@ -99,17 +105,56 @@ final class FamilyControlsBridge: NSObject {
         completion(false)
     }
 
+    // MARK: - Picker (always-allowed apps)
+
+    /// Same pattern as `presentPicker` but mutates `allowedSelection`. The
+    /// selection is persisted separately and subtracted from the shielded
+    /// selection when the shield is applied.
+    func presentAllowedPicker(completion: @escaping (Bool) -> Void) {
+        #if canImport(FamilyControls)
+        if #available(iOS 16.0, *) {
+            guard let presenter = presenter else {
+                completion(false)
+                return
+            }
+            let initial = self.allowedSelection
+            let vc = UIHostingController(rootView: PickerView(
+                title: "Always-allowed apps",
+                initialSelection: initial,
+                onDone: { [weak self, weak presenter] saved, updated in
+                    presenter?.dismiss(animated: true) {
+                        if saved, let updated = updated {
+                            self?.allowedSelection = updated
+                            self?.saveAllowedSelection()
+                        }
+                        completion(saved)
+                    }
+                }
+            ))
+            presenter.present(vc, animated: true)
+            return
+        }
+        #endif
+        completion(false)
+    }
+
     // MARK: - Shield
 
     func applyShield() {
         #if canImport(ManagedSettings) && canImport(FamilyControls)
         if #available(iOS 16.0, *) {
-            store.shield.applications = selection.applicationTokens.isEmpty
+            // Effective shield = shielded ∖ always-allowed. Computing the
+            // difference at apply-time means the user can tweak either
+            // selection independently and always get the expected result.
+            let effectiveApps = selection.applicationTokens
+                .subtracting(allowedSelection.applicationTokens)
+            let effectiveCategories = selection.categoryTokens
+                .subtracting(allowedSelection.categoryTokens)
+
+            store.shield.applications = effectiveApps.isEmpty ? nil : effectiveApps
+            store.shield.applicationCategories = effectiveCategories.isEmpty
                 ? nil
-                : selection.applicationTokens
-            store.shield.applicationCategories = selection.categoryTokens.isEmpty
-                ? nil
-                : .specific(selection.categoryTokens)
+                : .specific(effectiveCategories)
         }
         #endif
     }
@@ -123,15 +168,10 @@ final class FamilyControlsBridge: NSObject {
         #endif
     }
 
-    // MARK: - Persistence (selection tokens)
+    // MARK: - Persistence (shielded selection)
 
     private var selectionURL: URL? {
-        let fm = FileManager.default
-        guard let dir = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
-            return nil
-        }
-        try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("family_selection.json")
+        return applicationSupportURL(for: "family_selection.json")
     }
 
     private func saveSelection() {
@@ -157,19 +197,61 @@ final class FamilyControlsBridge: NSObject {
         }
         #endif
     }
+
+    // MARK: - Persistence (always-allowed selection)
+
+    private var allowedSelectionURL: URL? {
+        return applicationSupportURL(for: "family_allowed_selection.json")
+    }
+
+    private func saveAllowedSelection() {
+        #if canImport(FamilyControls)
+        guard let url = allowedSelectionURL else { return }
+        do {
+            let data = try JSONEncoder().encode(allowedSelection)
+            try data.write(to: url, options: [.atomic])
+        } catch {
+            NSLog("Failed to save allowed selection: \(error)")
+        }
+        #endif
+    }
+
+    private func loadAllowedSelection() {
+        #if canImport(FamilyControls)
+        guard let url = allowedSelectionURL,
+              let data = try? Data(contentsOf: url) else { return }
+        do {
+            allowedSelection = try JSONDecoder().decode(FamilyActivitySelection.self, from: data)
+        } catch {
+            NSLog("Failed to load allowed selection: \(error)")
+        }
+        #endif
+    }
+
+    private func applicationSupportURL(for filename: String) -> URL? {
+        let fm = FileManager.default
+        guard let dir = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+        try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent(filename)
+    }
 }
 
 #if canImport(FamilyControls)
 @available(iOS 16.0, *)
 private struct PickerView: View {
+    let title: String
     let onDone: (Bool, FamilyActivitySelection?) -> Void
 
     @State private var workingSelection: FamilyActivitySelection
 
     init(
+        title: String,
         initialSelection: FamilyActivitySelection,
         onDone: @escaping (Bool, FamilyActivitySelection?) -> Void
     ) {
+        self.title = title
         self.onDone = onDone
         self._workingSelection = State(initialValue: initialSelection)
     }
@@ -177,7 +259,7 @@ private struct PickerView: View {
     var body: some View {
         NavigationView {
             FamilyActivityPicker(selection: $workingSelection)
-                .navigationTitle("Apps to shield")
+                .navigationTitle(title)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
