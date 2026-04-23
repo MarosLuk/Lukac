@@ -1,0 +1,28 @@
+{
+  "name": "travel-planner",
+  "private": true,
+  "version": "0.0.1",
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "web": "pnpm --filter @tp/web dev",
+    "mobile": "pnpm --filter @tp/mobile start",
+    "db:start": "./.bin/supabase start && ./scripts/sync-local-env.sh",
+    "db:stop": "./.bin/supabase stop",
+    "db:reset": "./.bin/supabase db reset",
+    "db:status": "./.bin/supabase status",
+    "db:studio": "open http://127.0.0.1:54323",
+    "env:sync": "./scripts/sync-local-env.sh"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "prettier": "^3.4.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
