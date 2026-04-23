@@ -8,6 +8,7 @@ import '../models/external_task.dart';
 import '../models/reward_ledger.dart';
 import '../models/task.dart';
 import '../services/enforcement_service.dart';
+import '../services/sources/device_calendar_source.dart';
 import '../services/sources/ics_source.dart';
 import '../services/sources/task_source.dart';
 import '../services/sources/todoist_source.dart';
@@ -161,6 +162,18 @@ class LedgerNotifier extends AsyncNotifier<RewardLedger> {
     await _syncShield();
   }
 
+  /// Manually lift the shield indefinitely (or re-engage it) without
+  /// spending balance. Independent of the timed unlock — turning this off
+  /// restores whatever timed-lift window was in effect before.
+  Future<void> setManualUnlock(bool unlocked) async {
+    final current = state.valueOrNull ?? RewardLedger();
+    if (current.manuallyUnlocked == unlocked) return;
+    final next = current.copyWith(manuallyUnlocked: unlocked);
+    state = AsyncData(next);
+    await ref.read(storageServiceProvider).saveLedger(next);
+    await _syncShield();
+  }
+
   Future<void> clearExpiredLift() async {
     final current = state.valueOrNull;
     if (current == null) return;
@@ -298,6 +311,23 @@ Future<void> _applyShield(
   }
 }
 
+/// Side-effect provider: pings the native layer every 2 seconds so the
+/// AccessibilityService knows the Flutter process is still alive. When the
+/// user force-closes the app the timer stops, the native service sees a
+/// stale timestamp, and enforcement disables itself — so the device is
+/// never stuck behind the shield with no way to reach the UI.
+final heartbeatProvider = Provider<bool>((ref) {
+  if (!Platform.isAndroid) return false;
+  final enforcement = ref.read(enforcementServiceProvider);
+  unawaited(enforcement.heartbeat());
+  final timer = Timer.periodic(
+    const Duration(seconds: 1),
+    (_) => unawaited(enforcement.heartbeat()),
+  );
+  ref.onDispose(timer.cancel);
+  return true;
+});
+
 /// Side-effect provider: watches ledger + blocked apps and keeps the native
 /// shield in sync. Returning `true` lets widgets `ref.watch` it cheaply to
 /// ensure it is kept alive for the lifetime of the ProviderScope.
@@ -390,6 +420,17 @@ final installedAppsProvider = FutureProvider<List<InstalledApp>>((ref) async {
 /// tokens just land in [TaskSourceConfig.fields] the same way.
 final availableSourceTypesProvider = Provider<List<SourceDescriptor>>((ref) {
   return [
+    SourceDescriptor(
+      id: 'device_calendar',
+      displayName: 'Device calendar',
+      description:
+          'Reads events from every calendar synced to this phone (Google, '
+          'Outlook, Teams meetings, Samsung, …). One tap — one permission.',
+      icon: Icons.calendar_month_outlined,
+      // No config fields: permission is requested at first sync.
+      fields: const [],
+      buildFromConfig: (_) => DeviceCalendarSource(),
+    ),
     SourceDescriptor(
       id: 'ics',
       displayName: 'ICS URL',

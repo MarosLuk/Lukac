@@ -2,15 +2,20 @@ package com.lukac.timerewards
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
+import android.provider.Settings
 import android.view.accessibility.AccessibilityEvent
 
 /**
  * Watches foreground-app transitions and, when the shield is active, sends
- * the user back HOME if they open a blocked package.
+ * the user back HOME for any package that is NOT on the user's allow-list.
  *
- * Configuration is stored in SharedPreferences so it survives process death
- * and can be updated from MainActivity without rebinding the service.
+ * Semantics: deny-by-default. While the shield is active, only packages on
+ * the allow-list (plus the active launcher, active IME, SystemUI, and this
+ * app itself) are permitted to run in the foreground. The old "blocked"
+ * list is retained in prefs for backward compatibility but no longer drives
+ * the enforcement decision.
  */
 class AppBlockerService : AccessibilityService() {
 
@@ -26,29 +31,58 @@ class AppBlockerService : AccessibilityService() {
         val shieldActive = prefs.getBoolean(KEY_SHIELD_ACTIVE, false)
         if (!shieldActive) return
 
-        // Allow-list takes precedence over the blocked set. An always-allowed
-        // package is never sent home, even if it somehow ended up in both
-        // sets (the UI enforces mutual exclusion, but be defensive here).
+        // Only enforce while the Flutter side is alive. The main isolate
+        // writes a heartbeat every ~2s; if we haven't seen one recently we
+        // assume the user force-closed the app and disable enforcement so
+        // the device isn't stuck behind the shield.
+        val lastHeartbeat = prefs.getLong(KEY_LAST_HEARTBEAT, 0L)
+        if (System.currentTimeMillis() - lastHeartbeat > HEARTBEAT_STALE_MS) return
+
+        // Never touch our own app — the user must be able to reach the UI
+        // to disable the shield or edit the allow-list.
+        if (pkg == applicationContext.packageName) return
+        // Never touch core system surfaces.
+        if (pkg in SYSTEM_PACKAGES) return
+        // Never touch the active home launcher: if we sent it HOME we'd
+        // immediately re-trigger ourselves and lock the device in a loop.
+        if (pkg == resolveHomeLauncher()) return
+        // Never touch the active IME — keyboards present themselves as
+        // foreground windows on some OEM skins.
+        if (pkg == resolveCurrentIme()) return
+
         val allowed = prefs.getStringSet(KEY_ALLOWED, emptySet()) ?: emptySet()
         if (pkg in allowed) return
 
-        val blocked = prefs.getStringSet(KEY_BLOCKED, emptySet()) ?: emptySet()
-        if (blocked.isEmpty()) return
-        if (pkg == applicationContext.packageName) return
-        if (pkg in SYSTEM_PACKAGES) return
-
-        if (pkg in blocked) {
-            performGlobalAction(GLOBAL_ACTION_HOME)
-        }
+        // Deny-by-default.
+        performGlobalAction(GLOBAL_ACTION_HOME)
     }
 
     override fun onInterrupt() = Unit
+
+    private fun resolveHomeLauncher(): String? {
+        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        return packageManager
+            .resolveActivity(intent, 0)
+            ?.activityInfo
+            ?.packageName
+    }
+
+    private fun resolveCurrentIme(): String? {
+        val component = Settings.Secure.getString(
+            contentResolver,
+            Settings.Secure.DEFAULT_INPUT_METHOD,
+        ) ?: return null
+        // Format is "com.example/.SomeImeService" — take the package prefix.
+        return component.substringBefore('/').takeIf { it.isNotEmpty() }
+    }
 
     companion object {
         private const val PREFS = "time_rewards_blocker"
         private const val KEY_BLOCKED = "blocked_packages"
         private const val KEY_ALLOWED = "allowed_packages"
         private const val KEY_SHIELD_ACTIVE = "shield_active"
+        private const val KEY_LAST_HEARTBEAT = "last_heartbeat_ms"
+        private const val HEARTBEAT_STALE_MS = 2_500L
 
         private val SYSTEM_PACKAGES = setOf(
             "com.android.systemui",

@@ -14,6 +14,10 @@ class TimeRewardsApp extends ConsumerWidget {
     // with ledger + blocked-apps changes. Watching at the app root keeps it
     // alive for the lifetime of the ProviderScope.
     ref.watch(shieldSyncProvider);
+    // Heartbeat: tells the native AccessibilityService the Flutter side is
+    // alive. If the app is force-closed the pings stop and enforcement
+    // auto-disables so the device isn't stuck behind the shield.
+    ref.watch(heartbeatProvider);
 
     return MaterialApp(
       title: 'Time Rewards',

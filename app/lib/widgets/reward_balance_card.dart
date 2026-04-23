@@ -36,6 +36,7 @@ class RewardBalanceCard extends ConsumerWidget {
 
     final balanceSeconds = ledger.balanceSeconds;
     final isLifted = ledger.isShieldLifted;
+    final manuallyUnlocked = ledger.manuallyUnlocked;
     final canSpendAny = balanceSeconds > 0;
 
     return Padding(
@@ -61,7 +62,14 @@ class RewardBalanceCard extends ConsumerWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              if (isLifted)
+              if (manuallyUnlocked)
+                Pill(
+                  icon: Icons.lock_open,
+                  label: 'All apps unlocked',
+                  foreground: theme.colorScheme.primary,
+                  border: theme.colorScheme.primary.withValues(alpha: 0.4),
+                )
+              else if (isLifted)
                 Pill(
                   icon: Icons.lock_open,
                   label:
@@ -82,12 +90,32 @@ class RewardBalanceCard extends ConsumerWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: canSpendAny
+              onPressed: (canSpendAny && !manuallyUnlocked)
                   ? () => _openUnlockSheet(context,
                       maxSeconds: balanceSeconds)
                   : null,
               icon: const Icon(Icons.lock_open_outlined, size: 18),
               label: const Text('Unlock'),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => ref
+                  .read(ledgerProvider.notifier)
+                  .setManualUnlock(!manuallyUnlocked),
+              icon: Icon(
+                manuallyUnlocked
+                    ? Icons.lock_outline
+                    : Icons.no_encryption_outlined,
+                size: 18,
+              ),
+              label: Text(
+                manuallyUnlocked
+                    ? 'Re-enable shield'
+                    : 'Unlock all apps (no timer)',
+              ),
             ),
           ),
         ],

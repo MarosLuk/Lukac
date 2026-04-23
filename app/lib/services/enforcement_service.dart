@@ -14,9 +14,50 @@ class EnforcementService {
     return result ?? false;
   }
 
+  /// Writes a "still alive" timestamp the AccessibilityService checks before
+  /// enforcing. If the Flutter process dies (user force-closes the app), the
+  /// timestamp stops updating and the service stops blocking.
+  Future<void> heartbeat() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod('heartbeat');
+    } catch (_) {
+      // Ignore — tests / desktop / pre-native-install have no handler yet.
+    }
+  }
+
   Future<bool> hasPermissions() async {
     final result = await _channel.invokeMethod<bool>('hasPermissions');
     return result ?? false;
+  }
+
+  /// Android-only: whether the "Usage Access" special permission is granted.
+  /// iOS returns `true` (not applicable).
+  Future<bool> hasUsageAccess() async {
+    if (!Platform.isAndroid) return true;
+    final result = await _channel.invokeMethod<bool>('hasUsageAccess');
+    return result ?? false;
+  }
+
+  /// Android-only: whether the AppBlockerService accessibility service is
+  /// currently enabled. iOS returns `true` (not applicable).
+  Future<bool> hasAccessibilityAccess() async {
+    if (!Platform.isAndroid) return true;
+    final result = await _channel.invokeMethod<bool>('hasAccessibilityAccess');
+    return result ?? false;
+  }
+
+  /// Android-only: opens `Settings → Apps → Special access → Usage access`.
+  Future<void> openUsageAccessSettings() async {
+    if (!Platform.isAndroid) return;
+    await _channel.invokeMethod('openUsageAccessSettings');
+  }
+
+  /// Android-only: opens `Settings → Accessibility` where the user can
+  /// enable the Time Rewards service.
+  Future<void> openAccessibilitySettings() async {
+    if (!Platform.isAndroid) return;
+    await _channel.invokeMethod('openAccessibilitySettings');
   }
 
   /// On Android, returns installed user-app packages.
@@ -112,6 +153,44 @@ class EnforcementService {
     final result =
         await _channel.invokeMethod<bool>('requestNotificationAccess');
     return result ?? false;
+  }
+
+  /// Android-only: whether READ_CALENDAR is currently granted.
+  Future<bool> hasCalendarAccess() async {
+    if (!Platform.isAndroid) return false;
+    final r = await _channel.invokeMethod<bool>('hasCalendarAccess');
+    return r ?? false;
+  }
+
+  /// Android-only: shows the standard runtime-permission dialog for
+  /// READ_CALENDAR. Resolves with the user's choice.
+  Future<bool> requestCalendarAccess() async {
+    if (!Platform.isAndroid) return false;
+    final r = await _channel.invokeMethod<bool>('requestCalendarAccess');
+    return r ?? false;
+  }
+
+  /// Android-only: returns event *instances* from every calendar synced to
+  /// the device (Google / Outlook / Teams / Samsung / …) within the window
+  /// `[from, to]`. Each entry is `{eventId, title, beginMs, endMs,
+  /// calendar, allDay}`.
+  Future<List<Map<String, dynamic>>> listCalendarEvents({
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    if (!Platform.isAndroid) return const [];
+    final fromMs = (from ?? DateTime.now()).millisecondsSinceEpoch;
+    final toMs = (to ?? DateTime.now().add(const Duration(days: 14)))
+        .millisecondsSinceEpoch;
+    final r = await _channel.invokeMethod<List<dynamic>>(
+      'listCalendarEvents',
+      {'fromMs': fromMs, 'toMs': toMs},
+    );
+    if (r == null) return const [];
+    return r
+        .cast<Map<dynamic, dynamic>>()
+        .map((m) => m.map((k, v) => MapEntry(k.toString(), v)))
+        .toList();
   }
 }
 

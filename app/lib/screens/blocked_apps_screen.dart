@@ -37,14 +37,152 @@ class _AndroidPicker extends ConsumerStatefulWidget {
   ConsumerState<_AndroidPicker> createState() => _AndroidPickerState();
 }
 
-class _AndroidPickerState extends ConsumerState<_AndroidPicker> {
+class _AndroidPickerState extends ConsumerState<_AndroidPicker>
+    with WidgetsBindingObserver {
   final TextEditingController _searchCtrl = TextEditingController();
   String _query = '';
+  bool _dialogShown = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _ensurePermissionsOrPrompt());
+  }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _searchCtrl.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(permissionStatusProvider);
+      _ensurePermissionsOrPrompt();
+    }
+  }
+
+  Future<void> _ensurePermissionsOrPrompt() async {
+    if (!mounted || _dialogShown) return;
+    final enforcement = ref.read(enforcementServiceProvider);
+    final usage = await enforcement.hasUsageAccess();
+    final accessibility = await enforcement.hasAccessibilityAccess();
+    if (!mounted || (usage && accessibility)) return;
+
+    _dialogShown = true;
+    if (!usage) {
+      await _showPermissionStep(
+        stepLabel: 'Step 1 of 2',
+        title: 'Enable Usage Access',
+        bullets: const [
+          'On the next screen, scroll the list and tap Time Rewards.',
+          'Turn the "Permit usage access" toggle ON.',
+          'Press Back to return here — Time Rewards will prompt for step 2.',
+        ],
+        why:
+            'Usage Access lets Time Rewards see which app is in the '
+            'foreground so the shield can enforce the allow-list.',
+        primaryLabel: 'Open Usage Access',
+        onPrimary: enforcement.openUsageAccessSettings,
+      );
+    } else if (!accessibility) {
+      await _showPermissionStep(
+        stepLabel: 'Step 2 of 2',
+        title: 'Enable the Accessibility service',
+        bullets: const [
+          'On the next screen, find "Installed apps" (or "Downloaded services" '
+              'on some devices).',
+          'Tap Time Rewards.',
+          'Turn the toggle ON and tap Allow on the confirmation dialog.',
+          'Press Back to return here.',
+        ],
+        why:
+            'The accessibility service is what actually sends you back HOME '
+            'when you open an app that is not on the allow-list.',
+        primaryLabel: 'Open Accessibility settings',
+        onPrimary: enforcement.openAccessibilitySettings,
+      );
+    }
+    _dialogShown = false;
+  }
+
+  Future<void> _showPermissionStep({
+    required String stepLabel,
+    required String title,
+    required List<String> bullets,
+    required String why,
+    required String primaryLabel,
+    required Future<void> Function() onPrimary,
+  }) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        return AlertDialog(
+          title: Text(title),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  stepLabel,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                for (final line in bullets) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('•  '),
+                      Expanded(child: Text(line)),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                ],
+                const SizedBox(height: 6),
+                Text(
+                  why,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Android does not allow apps to grant this permission '
+                  'programmatically — it has to be toggled manually.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Not now'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                Navigator.of(ctx).pop();
+                await onPrimary();
+              },
+              child: Text(primaryLabel),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
